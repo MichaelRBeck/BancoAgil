@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💰 Banco Ágil
 
-## Getting Started
+Projeto desenvolvido como parte da pós-graduação em Engenharia de Front-End — FIAP.
 
-First, run the development server:
+O **Banco Ágil** é uma aplicação bancária digital onde usuários podem se cadastrar, realizar login e, após autenticados, acessar funcionalidades como consulta de saldo, depósitos, saques e transferências entre usuários cadastrados. Foi pensado como um banco simples e funcional, ideal para estudos, demonstrações ou aplicações básicas.
+
+---
+
+## 📚 Descrição do Projeto
+
+Este projeto simula o funcionamento de um banco digital com funcionalidades essenciais:
+
+- Cadastro e login de usuários
+- Operações bancárias (depósito, saque, transferência)
+- Visualização de saldo
+- Histórico de transações
+- Interface moderna e responsiva
+
+---
+
+## 🚀 Tecnologias Utilizadas
+
+- **Framework:** Next.js (App Router)
+- **Linguagem:** TypeScript
+- **Estilização:** Tailwind CSS + Styled-Components
+- **Banco de dados:** MongoDB com Mongoose
+
+---
+
+## 🧭 Estrutura de Pastas
+
+```
+📦 raiz
+├── api/
+│   ├── get-user/
+│   ├── login/
+│   ├── register/
+│   └── transaction/
+├── components/
+│   ├── footer/
+│   ├── modalComponents/
+│   ├── modals/
+│   ├── navbar/
+│   └── tables/
+├── homepage/
+│   ├── components/
+│   └── hooks/
+├── transactions/
+│   ├── components/
+│   ├── hooks/
+│   └── types/
+├── lib/
+├── models/
+├── services/
+├── types/
+├── utils/
+├── page.tsx
+├── layout.tsx
+├── globals.css
+└── .env.local
+```
+
+---
+
+## 🛠️ Como Rodar Localmente
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/MichaelRBeck/BancoAgil.git
+cd BancoAgil
+```
+
+### 2. Instale as dependências
+
+```bash
+npm install
+```
+
+### 3. Execute a aplicação
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse via: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧩 Funcionalidades
 
-## Learn More
+- ✅ Cadastro de usuários
+- ✅ Login com verificação
+- ✅ Visualização de saldo
+- ✅ Realização de depósitos, saques e transferências
+- ✅ Histórico de transações por usuário
+- ✅ Interface 100% responsiva
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🎨 Protótipo no Figma
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Você pode visualizar o protótipo visual do sistema aqui:
 
-## Deploy on Vercel
+🔗 [Figma - Tech Challenge Bank - Banco Ágil](https://www.figma.com/design/kp1chKhMvojYEHY5r49Dml/Tech-Challenge-Bank---BancoAgil?node-id=0-1&t=VPIS1ZWjOoAfcIgK-1)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 👤 Autor
+
+**Michael Ribeiro Beck Barboza**  
+📘 RM: 363609  
+🎓 Pós-graduação: Engenharia de Front-End  
+📚 Turma: Pós Tech - 3FRNT
+
+---
