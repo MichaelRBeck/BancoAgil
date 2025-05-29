@@ -1,103 +1,146 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from "react";
+import styled from 'styled-components';
+import Footer from "./components/footer/footer";
+import HomeNavbar from "./components/navbar/homeNavbar";
+import RegisterModal from './components/modals/registerModal';
+
+// Styled Components
+
+const MainContainer = styled.section`
+  background-color: var(--accent);
+  padding: 5rem 0;
+  position: relative;
+  overflow: hidden;
+`;
+
+const MainTitle = styled.h1`
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: var(--primary);
+  line-height: 1.2;
+`;
+
+const MainButton = styled.button`
+  background-color: var(--primary);
+  color: var(--neutral);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: var(--secondary);
+  }
+`;
+
+const FeatureCard = styled.div`
+  background-color: var(--neutral);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border: 1px solid var(--accent);
+  text-align: center;
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+`;
+
+const FAQContainer = styled.div`
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+`;
+
+// Main Component
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [hoverFeature, setHoverFeature] = useState<number | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  return (
+    <>
+      <div className="bg-[var(--background)] text-[var(--foreground)]">
+        <HomeNavbar />
+
+        <MainContainer>
+          <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+            <div className="md:w-1/2 text-center md:text-left">
+              <MainTitle>
+                Controle total das suas finanças
+              </MainTitle>
+              <p className="text-lg mb-6 text-[var(--foreground)]">
+                Gerencie seu dinheiro de forma simples, segura e eficiente com nossa plataforma digital.
+              </p>
+              <MainButton onClick={() => setShowRegisterModal(true)}>
+                Criar Conta
+              </MainButton>
+            </div>
+          </div>
+        </MainContainer>
+
+        <section className="py-16 bg-[var(--background)]">
+          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-10">
+            {[
+              { title: "Transações em tempo real", desc: "Envie ou receba valores com apenas alguns cliques." },
+              { title: "Foco na segurança", desc: "Camadas extras de proteção para sua tranquilidade." },
+              { title: "Design intuitivo", desc: "Interface clara para o seu dia a dia." },
+            ].map((feature, idx) => (
+              <FeatureCard
+                key={idx}
+                onMouseEnter={() => setHoverFeature(idx)}
+                onMouseLeave={() => setHoverFeature(null)}
+              >
+                <h3 className="text-xl font-bold mb-2 text-[var(--primary)]">{feature.title}</h3>
+                <p className="text-[var(--foreground)]">{feature.desc}</p>
+              </FeatureCard>
+            ))}
+          </div>
+        </section>
+
+        <section className="py-16 bg-[var(--accent)]">
+          <div className="max-w-5xl mx-auto px-6 text-center">
+            <h3 className="text-3xl font-bold mb-6 text-[var(--primary)]">Seu dinheiro, sempre visível</h3>
+            <div className="bg-[var(--neutral)] rounded-2xl p-8 shadow-md max-w-md mx-auto border border-[var(--accent)]">
+              <p className="text-[var(--foreground)] text-lg mb-2">Saldo Atual</p>
+              <p className="text-4xl font-extrabold text-[var(--secondary)] mb-4">R$ 3.220,00</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-[var(--background)]">
+          <FAQContainer>
+            <h3 className="text-2xl font-bold text-center mb-8 text-[var(--primary)]">Perguntas Frequentes</h3>
+            <div className="space-y-6">
+              <div>
+                <h4 className="font-semibold text-lg text-[var(--foreground)]">Preciso pagar para abrir conta?</h4>
+                <p className="text-[var(--foreground)]">Não! A conta digital é 100% gratuita.</p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-lg text-[var(--foreground)]">O banco é seguro?</h4>
+                <p className="text-[var(--foreground)]">Sim, utilizamos as melhores tecnologias pra isso.</p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-lg text-[var(--foreground)]">Vocês têm suporte?</h4>
+                <p className="text-[var(--foreground)]">Sim! Nosso time está disponível 24h via chat ou e-mail.</p>
+              </div>
+            </div>
+          </FAQContainer>
+        </section>
+
+        <Footer />
+      </div>
+
+      {showRegisterModal && <RegisterModal onClose={() => setShowRegisterModal(false)} />}
+    </>
   );
 }
