@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import NewTransactionModal from "../../components/modals/newTransactionModal";
-import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function NewTransactionButton() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const userId = searchParams.get('id');
+interface NewTransactionButtonProps {
+  userId?: string;
+}
+
+export default function NewTransactionButton({ userId = '' }: NewTransactionButtonProps) {
   const [showNewTransactionModal, setShowNewTransactionModal] = useState(false);
-
 
   return (
     <>
