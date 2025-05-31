@@ -1,9 +1,26 @@
 import React, { useState } from 'react';
-import FormInput from '../modalComponents/FormInput';
 import { FormDataRegister, ModalProps } from '../../types/ModalTypes';
 import { getFieldErrors, isFormValid } from '../../utils/Validation';
 
+import FormInput from '../modalComponents/FormInput';
+
+import {
+  Overlay,
+  ModalContainer,
+  CloseButton,
+  Title,
+  Form,
+  ShowPasswordLabel,
+  CheckboxInput,
+  TermsLabel,
+  TermsCheckbox,
+  TermsText,
+  SubmitButton,
+} from './registerModal.styles';
+
+// Componente de modal para cadastro de novo usuário
 export default function RegisterModal({ onClose }: ModalProps) {
+  // Estado para armazenar os dados do formulário
   const [formData, setFormData] = useState<FormDataRegister>({
     fullName: '',
     email: '',
@@ -14,14 +31,20 @@ export default function RegisterModal({ onClose }: ModalProps) {
     acceptedTerms: false,
   });
 
+  // Estado para alternar visibilidade da senha
   const [showPassword, setShowPassword] = useState(false);
+
+  // Validações de campos e formulário
   const fieldErrors = getFieldErrors(formData);
   const validForm = isFormValid(formData);
 
+  // Atualiza os valores do formulário conforme o usuário digita/marca
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
+
+    // Trata corretamente valores de checkbox
     const updatedValue =
       type === 'checkbox' && 'checked' in e.target
         ? (e.target as HTMLInputElement).checked
@@ -33,8 +56,10 @@ export default function RegisterModal({ onClose }: ModalProps) {
     }));
   };
 
+  // Submete os dados do formulário à API de cadastro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!validForm) return;
 
     try {
@@ -51,6 +76,7 @@ export default function RegisterModal({ onClose }: ModalProps) {
       });
 
       const result = await response.json();
+
       if (response.ok) {
         alert('Cadastro realizado com sucesso!');
         onClose();
@@ -63,27 +89,19 @@ export default function RegisterModal({ onClose }: ModalProps) {
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-white/30 backdrop-blur-sm"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg rounded-xl bg-[var(--neutral)] p-8 shadow-lg max-h-[90vh] overflow-auto"
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 cursor-pointer"
-          aria-label="Fechar modal"
-        >
+    <Overlay onClick={onClose}>
+      <ModalContainer onClick={(e) => e.stopPropagation()}>
+        {/* Botão de fechar modal */}
+        <CloseButton onClick={onClose} aria-label="Fechar modal">
           ✕
-        </button>
+        </CloseButton>
 
-        <h1 className="text-[var(--text)] text-[22px] font-bold leading-tight tracking-[-0.015em] pb-3 pt-5 text-left">
-          Cadastro BancoÁgil
-        </h1>
+        {/* Título do modal */}
+        <Title>Cadastro BancoÁgil</Title>
 
-        <form className="flex flex-col gap-6 pt-4" onSubmit={handleSubmit}>
+        {/* Formulário de cadastro */}
+        <Form onSubmit={handleSubmit}>
+          {/* Nome completo */}
           <FormInput
             label="Nome completo"
             name="fullName"
@@ -93,6 +111,8 @@ export default function RegisterModal({ onClose }: ModalProps) {
             placeholder="Seu nome completo"
             required
           />
+
+          {/* E-mail */}
           <FormInput
             label="E-mail"
             name="email"
@@ -104,6 +124,8 @@ export default function RegisterModal({ onClose }: ModalProps) {
             required
             errorMessage="Formato de e-mail inválido"
           />
+
+          {/* CPF */}
           <FormInput
             label="CPF"
             name="cpf"
@@ -115,6 +137,8 @@ export default function RegisterModal({ onClose }: ModalProps) {
             maxLength={14}
             errorMessage="CPF inválido."
           />
+
+          {/* Senha */}
           <FormInput
             label="Senha"
             name="password"
@@ -126,15 +150,18 @@ export default function RegisterModal({ onClose }: ModalProps) {
             required
             errorMessage="A senha deve ter pelo menos 6 caracteres."
           />
-          <label className="flex items-center gap-2 text-sm text-[var(--text)]">
-            <input
+
+          {/* Checkbox para mostrar senha */}
+          <ShowPasswordLabel>
+            <CheckboxInput
               type="checkbox"
               checked={showPassword}
               onChange={() => setShowPassword(!showPassword)}
-              className="h-4 w-4 rounded border border-[#dce4e0] checked:bg-[var(--green)] checked:border-[var(--green)] focus:outline-none"
             />
             Mostrar senha
-          </label>
+          </ShowPasswordLabel>
+
+          {/* Confirmar senha */}
           <FormInput
             label="Confirmar Senha"
             name="confirmPassword"
@@ -146,6 +173,8 @@ export default function RegisterModal({ onClose }: ModalProps) {
             required
             errorMessage="As senhas não coincidem."
           />
+
+          {/* Data de nascimento */}
           <FormInput
             label="Data de nascimento"
             name="birthDate"
@@ -153,32 +182,27 @@ export default function RegisterModal({ onClose }: ModalProps) {
             onChange={handleChange}
             type="date"
           />
-          <label className="flex items-start gap-3 px-1 text-[var(--text)]">
-            <input
+
+          {/* Aceitação dos termos */}
+          <TermsLabel>
+            <TermsCheckbox
               name="acceptedTerms"
               type="checkbox"
               checked={formData.acceptedTerms}
               onChange={handleChange}
-              className="mt-1 h-5 w-5 rounded border-2 border-[#dce4e0] bg-transparent text-[var(--green)] checked:bg-[var(--green)] checked:border-[var(--green)] focus:outline-none"
             />
-            <span className="text-base">
-              Concordo com os{' '}
-              <span className="underline cursor-pointer">Termos de Serviço</span> e a{' '}
-              <span className="underline cursor-pointer">Política de Privacidade</span>.
-            </span>
-          </label>
-          <button
-            type="submit"
-            disabled={!validForm}
-            className={`h-12 w-full rounded-xl text-white font-semibold text-lg transition-colors ${validForm
-                ? 'bg-[var(--primary)] hover:bg-[#1f3550] cursor-pointer'
-                : 'bg-gray-400 cursor-not-allowed'
-              }`}
-          >
-            Cadastrar
-          </button>
-        </form>
-      </div>
-    </div>
+            <TermsText>
+              Concordo com os <span>Termos de Serviço</span> e a{' '}
+              <span>Política de Privacidade</span>.
+            </TermsText>
+          </TermsLabel>
+
+          {/* Botão de envio do formulário */}
+          <SubmitButton type="submit" disabled={!validForm}>
+            Criar Conta
+          </SubmitButton>
+        </Form>
+      </ModalContainer>
+    </Overlay>
   );
 }

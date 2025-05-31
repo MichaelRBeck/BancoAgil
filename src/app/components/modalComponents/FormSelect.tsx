@@ -1,14 +1,16 @@
 import React from 'react';
 
+// Tipagem das props esperadas pelo componente FormSelect
 interface FormSelectProps {
-  label: string;
-  name: string;
-  value: string;
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  required?: boolean;
-  options: { value: string; label: string }[];
+  label: string; // Rótulo exibido acima do select
+  name: string; // Nome do select, usado também como identificador
+  value: string; // Valor atualmente selecionado
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void; // Função chamada ao alterar a seleção
+  required?: boolean; // Se o campo é obrigatório
+  options: { value: string; label: string }[]; // Lista de opções a serem exibidas no select
 }
 
+// Componente de select (dropdown) reutilizável
 export default function FormSelect({
   label,
   name,
@@ -19,9 +21,13 @@ export default function FormSelect({
 }: FormSelectProps) {
   return (
     <label className="flex flex-col">
+      {/* Rótulo do campo com indicação de obrigatório */}
       <span className="text-base font-medium text-[#121714] pb-2">
-        {label} {required && <span className="text-gray-400">*</span>}
+        {label}{' '}
+        {required && <span className="text-gray-400">*</span>}
       </span>
+
+      {/* Campo select com as opções fornecidas */}
       <select
         name={name}
         value={value}

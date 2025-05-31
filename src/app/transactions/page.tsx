@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import { useEffect, useState } from 'react';
 import Navbar from '../components/navbar/navbar';
 import Footer from '../components/footer/footer';
 import DinamicTransactionTable from '../components/tables/dinamicTransactionTable';
@@ -10,49 +9,32 @@ import { UserHeader } from './components/UserHeader';
 import TotalBalanceCard from './components/TotalBalanceCard';
 import NewTransactionButton from './components/NewTransactionButton';
 
-const PageWrapper = styled.div`
-  position: relative;
-  display: flex;
-  min-height: 100vh;
-  flex-direction: column;
-  background: white;
-  overflow-x: hidden;
-`;
-
-const LayoutContainer = styled.div`
-  display: flex;
-  flex-grow: 1;
-  flex-direction: column;
-  height: 100%;
-`;
-
-const ContentWrapper = styled.div`
-  display: flex;
-  flex: 1;
-  justify-content: center;
-  padding: 1.25rem 1.5rem;
-
-  @media (min-width: 640px) {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
-  }
-`;
-
-const ContentInner = styled.div`
-  width: 100%;
-  max-width: 80rem;
-`;
+import { PageWrapper, LayoutContainer, ContentWrapper, ContentInner } from './styles';
 
 export default function TransactionPage() {
-  const { user, transactions, setTransactions } = useTransactions();
+  // Estado para armazenar o ID do usuário autenticado (lido do localStorage)
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
 
-  // Aqui usa o CPF direto do user (assumindo que existe)
-  const loggedUserCpf = user?.cpf ?? '';
+  // Ao montar o componente, busca o userId no localStorage e salva no estado
+  useEffect(() => {
+    const storedAuthUserId = localStorage.getItem('authUserId');
+    setAuthUserId(storedAuthUserId);
+  }, []);
 
+  // Hook customizado que busca dados do usuário e suas transações com base no authUserId
+  const { user, transactions, setTransactions } = useTransactions(authUserId);
+
+  // Se ainda não temos o userId, não renderiza nada (aguarda o carregamento)
+  if (!authUserId) {
+    return null;
+  }
+
+  // Filtra as transações por tipo para separar na tabela correta
   const transferTransactions = transactions.filter(tx => tx.type === 'Transferência');
   const depositTransactions = transactions.filter(tx => tx.type === 'Depósito');
   const withdrawTransactions = transactions.filter(tx => tx.type === 'Saque');
 
+  // Função que atualiza uma transação na lista (para edição)
   const handleUpdate = (updatedTx: any) => {
     setTransactions(prev =>
       prev.map(tx => (tx._id === updatedTx._id ? updatedTx : tx))
@@ -62,27 +44,34 @@ export default function TransactionPage() {
   return (
     <PageWrapper>
       <LayoutContainer>
+        {/* Navbar fixa no topo */}
         <Navbar />
 
         <ContentWrapper>
           <ContentInner>
+            {/* Cabeçalho com dados do usuário */}
             <UserHeader user={user} />
+
             <div className="p-4">
               <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+                {/* Cartão que mostra o saldo total do usuário */}
                 <TotalBalanceCard user={user} />
               </div>
             </div>
 
+            {/* Botão para criar nova transação */}
             <NewTransactionButton />
 
+            {/* Tabela dinâmica para transferências, permite edição */}
             <DinamicTransactionTable
               title="Transferências"
               transactions={transferTransactions}
               onTransactionUpdated={handleUpdate}
               editable={true}
-              loggedUserCpf={loggedUserCpf}
+              loggedUserCpf={user?.cpf ?? ''}
             />
 
+            {/* Tabela para depósitos */}
             <DinamicTransactionTable
               title="Depósitos"
               transactions={depositTransactions}
@@ -90,6 +79,7 @@ export default function TransactionPage() {
               editable={true}
             />
 
+            {/* Tabela para saques */}
             <DinamicTransactionTable
               title="Saques"
               transactions={withdrawTransactions}
@@ -99,6 +89,8 @@ export default function TransactionPage() {
           </ContentInner>
         </ContentWrapper>
       </LayoutContainer>
+
+      {/* Rodapé da página */}
       <Footer />
     </PageWrapper>
   );

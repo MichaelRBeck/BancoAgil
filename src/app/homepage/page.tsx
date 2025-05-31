@@ -1,109 +1,62 @@
 'use client';
 
-import styled from 'styled-components';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import Footer from "../components/footer/footer";
-import Navbar from "../components/navbar/navbar";
-import NewTransactionModal from "../components/modals/newTransactionModal";
-import DinamicTransactionTable from "../components/tables/dinamicTransactionTable";
-import { UserHeader } from "./components/UserHeader";
-import { BalanceCard } from "./components/BalanceCard";
-import { useUser } from "./hooks/useUser";
-import { useUserTransactions } from "./hooks/useUserTransactions";
-import { Transaction } from "@/app/transactions/types/transaction";
 
-const PageWrapper = styled.div`
-  position: relative;
-  display: flex;
-  min-height: 100vh;
-  flex-direction: column;
-  background-color: white;
-  overflow-x: hidden;
-`;
+import Footer from '../components/footer/footer';
+import Navbar from '../components/navbar/navbar';
+import NewTransactionModal from '../components/modals/newTransactionModal';
+import DinamicTransactionTable from '../components/tables/dinamicTransactionTable';
 
-const LayoutContainer = styled.div`
-  display: flex;
-  flex-grow: 1;
-  flex-direction: column;
-  height: 100%;
-`;
+import { UserHeader } from './components/UserHeader';
+import { BalanceCard } from './components/BalanceCard';
 
-const MainContent = styled.main`
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  padding: 1.25rem 2.5rem; /* 20px 40px */
+import { useUser } from './hooks/useUser';
+import { useUserTransactions } from './hooks/useUserTransactions';
 
-  @media (min-width: 640px) {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
-  }
-`;
+import { Transaction } from '@/app/transactions/types/transaction';
 
-const ContentInner = styled.div`
-  width: 100%;
-  max-width: 80rem; /* max-w-5xl */
-`;
-
-const ButtonWrapper = styled.div`
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 1rem;
-  margin-bottom: 1.5rem;
-`;
-
-const NewTransactionButton = styled.button`
-  cursor: pointer;
-  height: 2.5rem;
-  min-width: 180px;
-  border-radius: 12px;
-  padding: 0 1.5rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.015em;
-  transition: background-color 0.3s ease;
-  color: #FAFAFA;
-  background-color: var(--primary);
-  border: none;
-
-  &:hover {
-    background-color: var(--secondary);
-  }
-`;
-
-const BalanceContainer = styled.div`
-  padding: 1rem;
-  padding-left: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-
-  @media (min-width: 640px) {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-  }
-`;
+import {
+  PageWrapper,
+  LayoutContainer,
+  MainContent,
+  ContentInner,
+  ButtonWrapper,
+  NewTransactionButton,
+  BalanceContainer,
+} from './styles';
 
 export default function Homepage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const userId = searchParams.get('id');
 
-  const user = useUser(userId);
-  const { transactions, setTransactions } = useUserTransactions(userId);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const [showNewTransactionModal, setShowNewTransactionModal] = useState(false);
 
+  // Carrega o userId da URL e verifica autenticação via localStorage
   useEffect(() => {
+    setIsClient(true);
+
     const authUserId = localStorage.getItem('authUserId');
     const urlUserId = searchParams.get('id');
 
+    setUserId(urlUserId);
+
     if (!authUserId || authUserId !== urlUserId) {
       alert('Acesso negado: usuário inválido.');
-      router.push('/');
+      router.push('/'); // Redireciona para a home se não autorizado
     }
   }, [router, searchParams]);
+
+  // Busca dados do usuário e suas transações via hooks customizados
+  const user = useUser(userId);
+  const { transactions, setTransactions } = useUserTransactions(userId);
+
+  // Aguarda o carregamento do client e o userId estar definido
+  if (!isClient || !userId) {
+    return null;
+  }
 
   return (
     <>
@@ -113,26 +66,28 @@ export default function Homepage() {
 
           <MainContent>
             <ContentInner>
+              {/* Cabeçalho com nome do usuário */}
               <UserHeader fullName={user?.fullName} />
 
+              {/* Cartão com o saldo total */}
               <BalanceContainer>
                 <BalanceCard totalBalance={user?.totalBalance} />
               </BalanceContainer>
 
+              {/* Botão para abrir modal de nova transação */}
               <ButtonWrapper>
                 <NewTransactionButton onClick={() => setShowNewTransactionModal(true)}>
                   Realizar uma nova transação
                 </NewTransactionButton>
               </ButtonWrapper>
 
+              {/* Tabela dinâmica com todas as transações */}
               <DinamicTransactionTable
                 title="Todas as Transações"
                 transactions={transactions}
                 onTransactionUpdated={(updatedTx) =>
                   setTransactions((prev) =>
-                    prev.map((tx) =>
-                      tx._id === updatedTx._id ? (updatedTx as Transaction) : tx
-                    )
+                    prev.map((tx) => (tx._id === updatedTx._id ? (updatedTx as Transaction) : tx))
                   )
                 }
               />
@@ -142,11 +97,9 @@ export default function Homepage() {
         <Footer />
       </PageWrapper>
 
+      {/* Modal para criar nova transação */}
       {showNewTransactionModal && (
-        <NewTransactionModal
-          onClose={() => setShowNewTransactionModal(false)}
-          userId={userId}
-        />
+        <NewTransactionModal onClose={() => setShowNewTransactionModal(false)} userId={userId} />
       )}
     </>
   );

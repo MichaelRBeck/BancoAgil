@@ -1,9 +1,20 @@
-// .storybook/next-router-mock.ts
 export const useRouter = () => ({
-  push: () => {},
-  replace: () => {},
-  refresh: () => {},
+  push: () => Promise.resolve(true),
+  replace: () => Promise.resolve(true),
+  prefetch: () => Promise.resolve(true),
   pathname: '/',
   query: {},
-  back: () => {},
+  asPath: '/',
+  events: {
+    on: () => {},
+    off: () => {},
+    emit: () => {}
+  }
+});
+
+export const useSearchParams = () => ({
+  get: (key: string) => {
+    if (key === 'userId') return 'storybook-user-id'; // valor padrão, pode alterar
+    return null;
+  }
 });

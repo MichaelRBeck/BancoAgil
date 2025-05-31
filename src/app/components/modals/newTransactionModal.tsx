@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import styled from 'styled-components';
+import {
+  Overlay,
+  ModalBox,
+  CloseButton,
+  Title,
+} from './newTransactionModal.styles';
 import FormInput from '../modalComponents/FormInput';
 import FormSelect from '../modalComponents/FormSelect';
 
@@ -9,51 +14,6 @@ interface ModalProps {
   onClose: () => void;
   userId: string | null;
 }
-
-// Styled Components
-const Overlay = styled.div`
-position: fixed;
-inset: 0;
-z-index: 50;
-display: flex;
-align-items: center;
-justify-content: center;
-background-color: rgba(255, 255, 255, 0.3);
-backdrop-filter: blur(4px);
-`;
-
-const ModalBox = styled.div`
-position: relative;
-background-color: white;
-border-radius: 0.75rem;
-padding: 2rem;
-width: 100%;
-max-width: 40rem;
-max-height: 90vh;
-overflow-y: auto;
-box-shadow: 0 4px 12px rgba(18, 23, 20, 0.12);
-`;
-
-const CloseButton = styled.button`
-position: absolute;
-top: 1rem;
-right: 1rem;
-color: #6b7280;
-font-size: 1.5rem;
-cursor: pointer;
-
-&:hover {
-  color: #374151;
-}
-`;
-
-const Title = styled.h1`
-font-size: 1.875rem; /* text-3xl */
-font-weight: 700;
-color: #121714;
-margin-bottom: 2rem;
-line-height: 1.25;
-`;
 
 export default function NewTransactionModal({ onClose, userId }: ModalProps) {
   const [tipo, setTipo] = useState('');
@@ -158,8 +118,9 @@ export default function NewTransactionModal({ onClose, userId }: ModalProps) {
           <button
             type="submit"
             disabled={!isFormValid}
-            className={`w-full rounded-xl py-3 text-base font-bold tracking-[0.015em] transition ${isFormValid ? 'hover:bg-secondary' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+            className={`w-full rounded-xl py-3 text-base font-bold tracking-[0.015em] transition ${
+              isFormValid ? 'hover:bg-secondary' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
             style={{
               backgroundColor: isFormValid ? 'var(--primary)' : undefined,
               color: isFormValid ? 'white' : undefined,

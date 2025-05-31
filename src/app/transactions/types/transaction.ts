@@ -1,6 +1,6 @@
 export type User = {
   _id: string;
-  fullName: string; // Corrigir aqui
+  fullName: string;
   email: string;
   password: string;
   cpf: string;
@@ -14,6 +14,6 @@ export type Transaction = {
   type: "Depósito" | "Saque" | "Transferência";
   value: number;
   cpfOrigin?: string;
-  cpfDest?: string;
+  cpfDest?: string; 
   createdAt: string;
 };
