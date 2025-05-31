@@ -1,3 +1,4 @@
+
 # 💰 Banco Ágil
 
 Projeto desenvolvido como parte da pós-graduação em Engenharia de Front-End — FIAP.
@@ -77,13 +78,47 @@ cd BancoAgil
 npm install
 ```
 
-### 3. Execute a aplicação
+### 3. Configure as variáveis de ambiente
+
+Antes de rodar o projeto, copie o arquivo `.env.example` para `.env.local` e preencha as variáveis com seus dados reais:
+
+```bash
+cp .env.example .env.local
+```
+
+Exemplo do que deve conter no `.env.local`:
+
+```env
+MONGODB_URI="mongodb+srv://seu_usuario:sua_senha@cluster.mongodb.net/?retryWrites=true&w=majority&appName=BancoAgil&authSource=admin"
+```
+
+### 4. Execute a aplicação
 
 ```bash
 npm run dev
 ```
 
 Acesse via: [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 📖 Rodando o Storybook
+
+O projeto também possui o Storybook configurado para visualização dos componentes isoladamente.
+
+Para rodar o Storybook localmente, execute:
+
+```bash
+npm run storybook
+```
+
+O Storybook ficará disponível em: [http://localhost:6006](http://localhost:6006)
+
+Para gerar a build estática do Storybook, use:
+
+```bash
+npm run build-storybook
+```
 
 ---
 
@@ -112,5 +147,3 @@ Você pode visualizar o protótipo visual do sistema aqui:
 📘 RM: 363609  
 🎓 Pós-graduação: Engenharia de Front-End  
 📚 Turma: Pós Tech - 3FRNT
-
----
