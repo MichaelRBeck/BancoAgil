@@ -1,9 +1,8 @@
-// Define os tipos das props recebidas pelo componente
+
 type BalanceCardProps = {
-  totalBalance?: number; // saldo total opcional, com valor padrão de 0
+  totalBalance?: number; 
 };
 
-// Componente que exibe o saldo total do usuário em formato monetário
 export function BalanceCard({ totalBalance = 0 }: BalanceCardProps) {
   return (
     <div className="w-full sm:w-80 rounded-xl border bg-white px-6 py-4 shadow-sm">

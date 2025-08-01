@@ -1,46 +1,57 @@
+'use client';
+
 import React from 'react';
 
-// Tipagem das props esperadas pelo componente FormSelect
-interface FormSelectProps {
-  label: string; // Rótulo exibido acima do select
-  name: string; // Nome do select, usado também como identificador
-  value: string; // Valor atualmente selecionado
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void; // Função chamada ao alterar a seleção
-  required?: boolean; // Se o campo é obrigatório
-  options: { value: string; label: string }[]; // Lista de opções a serem exibidas no select
+interface Option {
+  value: string;
+  label: string;
 }
 
-// Componente de select (dropdown) reutilizável
-export default function FormSelect({
+interface FormSelectProps {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: Option[];
+  required?: boolean;
+  disabled?: boolean;
+}
+
+const FormSelect: React.FC<FormSelectProps> = ({
   label,
   name,
   value,
   onChange,
-  required = false,
   options,
-}: FormSelectProps) {
+  required = false,
+  disabled = false,
+}) => {
   return (
-    <label className="flex flex-col">
-      {/* Rótulo do campo com indicação de obrigatório */}
-      <span className="text-base font-medium text-[#121714] pb-2">
-        {label}{' '}
-        {required && <span className="text-gray-400">*</span>}
-      </span>
-
-      {/* Campo select com as opções fornecidas */}
+    <div className="flex flex-col gap-2">
+      <label htmlFor={name} className="text-sm font-medium text-gray-700">
+        {label}
+      </label>
       <select
+        id={name}
         name={name}
         value={value}
         onChange={onChange}
         required={required}
-        className="h-14 w-full rounded-xl border border-[#dce4e0] bg-white px-4 text-base text-[#121714] focus:outline-none"
+        disabled={disabled}
+        className={`w-full rounded-xl border px-4 py-3 text-base text-gray-900 shadow-sm outline-none transition ${
+          disabled
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            : 'bg-white hover:border-primary focus:border-secondary'
+        }`}
       >
-        {options.map(({ value: val, label }) => (
-          <option key={val} value={val}>
-            {label}
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
-}
+};
+
+export default FormSelect;

@@ -1,13 +1,19 @@
-import connectDB from "../lib/mongodb";
-import User, { IUser } from "../models/User";
+import mongoose from 'mongoose';
+import connectDB from '../lib/mongodb';
+import User from '../models/User';
+import { IUserLean } from '../models/User';
 
-export async function getUserById(userId: string): Promise<IUser | null> {
+export async function getUserById(userId: string): Promise<IUserLean | null> {
   await connectDB();
+
   try {
-    const user = await User.findById(userId).lean<IUser>();
+    const objectId = new mongoose.Types.ObjectId(userId);
+    const user = await User.findById(objectId).lean<IUserLean>().exec();
+
+    console.log('Resultado da busca do usuário:', user);
     return user || null;
   } catch (error) {
-    console.error("Erro ao buscar usuário:", error);
+    console.error('Erro ao buscar usuário:', error);
     return null;
   }
 }

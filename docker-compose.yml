@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: bancoagil-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb+srv://mikerbeck2:projetotechchallenge@bancoagil.ibnhkhf.mongodb.net/BancoAgil?retryWrites=true&w=majority
+    restart: unless-stopped

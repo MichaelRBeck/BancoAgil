@@ -1,5 +1,9 @@
+'use client';
+
 import { Geist, Geist_Mono, Roboto } from "next/font/google";
-import "./globals.css";
+import "../styles/globals.css";
+import { Provider } from 'react-redux';
+import { store } from '@/redux/store';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,9 +30,10 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} antialiased`}
-        style={{ fontFamily: "var(--font-roboto), Arial, sans-serif" }}
       >
-        {children}
+        <Provider store={store}>
+          {children}
+        </Provider>
       </body>
     </html>
   );

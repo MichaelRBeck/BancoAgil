@@ -1,3 +1,4 @@
+/*
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import DinamicTransactionTable from './dinamicTransactionTable';
@@ -48,3 +49,4 @@ export const Default: Story = {
     loggedUserCpf: '123.456.789-00',
   },
 };
+*/

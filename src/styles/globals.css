@@ -11,10 +11,12 @@
 
   --background: #F9FBFC;
   --foreground: #1F2937;
+
+  --font-roboto: 'Roboto', Arial, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-roboto), Arial, sans-serif;
+  font-family: var(--font-roboto);
 }

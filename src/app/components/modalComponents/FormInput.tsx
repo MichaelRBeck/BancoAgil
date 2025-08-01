@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 // Tipagem das props esperadas pelo componente FormInput
 interface FormInputProps {
   label: string; // Rótulo exibido acima do input
   name: string; // Nome do input, usado também como identificador
   value: string; // Valor atual do input
-  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void; // Função chamada ao alterar o valor
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; // Função chamada ao alterar o valor
   placeholder?: string; // Texto de sugestão exibido quando o campo está vazio
   type?: string; // Tipo do input (text, number, etc.)
   required?: boolean; // Se o campo é obrigatório
@@ -14,10 +14,11 @@ interface FormInputProps {
   maxLength?: number; // Tamanho máximo permitido no campo
   min?: string; // Valor mínimo (útil em campos numéricos ou de data)
   step?: string; // Intervalo entre valores (para inputs numéricos)
+  disabled?: boolean;
 }
 
-// Componente de input de formulário reutilizável
-export default function FormInput({
+// Componente de input de formulário reutilizável com suporte a ref
+const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
   label,
   name,
   value,
@@ -30,7 +31,8 @@ export default function FormInput({
   maxLength,
   min,
   step,
-}: FormInputProps) {
+  disabled = false,
+}, ref) => {
   return (
     <label className="flex flex-col">
       {/* Rótulo do campo com indicação de obrigatório */}
@@ -54,6 +56,8 @@ export default function FormInput({
         min={min}
         step={step}
         required={required}
+        disabled={disabled}
+        ref={ref}
         className={`
           h-14 w-full rounded-xl border
           ${hasError ? 'border-red-500' : 'border-[#dce4e0]'}
@@ -68,4 +72,8 @@ export default function FormInput({
       )}
     </label>
   );
-}
+});
+
+FormInput.displayName = 'FormInput';
+
+export default FormInput;

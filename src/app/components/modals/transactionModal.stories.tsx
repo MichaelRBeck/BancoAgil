@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import newTransactionModal from './newTransactionModal';
+import newTransactionModal from './transactionModal';
 
 const meta: Meta<typeof newTransactionModal> = {
   title: 'Components/Modals/newTransactionModal',

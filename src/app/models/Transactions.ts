@@ -35,6 +35,14 @@ const transactionSchema = new Schema({
         type: Date,
         default: Date.now,
     },
+    attachment: {
+        type: String,
+        required: false
+    },
+    attachmentName: {
+        type: String,
+        required: false
+    }
 });
 
 const Transaction = models.Transaction || model('Transaction', transactionSchema);

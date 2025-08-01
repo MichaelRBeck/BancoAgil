@@ -14,17 +14,19 @@ export default function Navbar() {
   }, []);
 
   const handleRedirect = (path: 'homepage' | 'transactions') => {
-    const userId = localStorage.getItem('authUserId');
-    if (!userId) {
-      router.push('/');
-    } else {
-      router.push(`/${path}?id=${userId}`);
-    }
+    // Como o backend identifica o usuário pelo cookie JWT,
+    // não é necessário pegar userId aqui e passar como query param
+    router.push(`/${path}`);
     setIsMobileMenuOpen(false); // Fecha menu após navegação
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('authUserId');
+    // Se estiver usando redux para logout, despache a ação aqui
+    // Para simplificar, só redireciona para login e espera backend limpar cookie
+
+    // Idealmente, você faria uma chamada para /api/logout para limpar cookie HttpOnly no backend
+    // await fetch('/api/logout', { method: 'POST' });
+
     router.push('/');
     setIsMobileMenuOpen(false); // Fecha menu após logout
   };
@@ -38,6 +40,9 @@ export default function Navbar() {
         <div
           onClick={() => handleRedirect('homepage')}
           className="text-[var(--foreground)] cursor-pointer"
+          role="link"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleRedirect('homepage')}
         >
           <h2 className="text-lg font-bold tracking-[-0.015em] leading-tight">BancoAgil</h2>
         </div>
@@ -66,7 +71,7 @@ export default function Navbar() {
 
         {/* Botão menu mobile */}
         <div className="sm:hidden">
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Toggle menu">
             {isMobileMenuOpen ? <X className="text-[var(--foreground)]" /> : <Menu className="text-[var(--foreground)]" />}
           </button>
         </div>
@@ -74,7 +79,7 @@ export default function Navbar() {
 
       {/* Menu mobile suspenso */}
       {isMobileMenuOpen && (
-        <div className="sm:hidden fixed top-[56px] left-0 w-full bg-[var(--background)] border-b border-t border-[var(--accent)] px-6 py-4 flex flex-col gap-4 z-40 shadow-md">
+        <nav className="sm:hidden fixed top-[56px] left-0 w-full bg-[var(--background)] border-b border-t border-[var(--accent)] px-6 py-4 flex flex-col gap-4 z-40 shadow-md" aria-label="Mobile menu">
           <button
             onClick={() => handleRedirect('homepage')}
             className="w-full text-[var(--foreground)] text-sm font-medium text-left hover:underline"
@@ -93,7 +98,7 @@ export default function Navbar() {
           >
             Sair
           </button>
-        </div>
+        </nav>
       )}
     </>
   );

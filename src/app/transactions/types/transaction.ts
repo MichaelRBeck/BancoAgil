@@ -14,6 +14,11 @@ export type Transaction = {
   type: "Depósito" | "Saque" | "Transferência";
   value: number;
   cpfOrigin?: string;
-  cpfDest?: string; 
+  cpfDest?: string;
   createdAt: string;
+  attachment?: string; // explicitamente string
+  attachmentName?: string; // explicitamente string
+  [key: string]: string | number | undefined;
 };
+
+

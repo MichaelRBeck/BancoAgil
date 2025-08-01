@@ -1,278 +1,366 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
-import { AiOutlineInfoCircle, AiOutlineDown, AiOutlineUp } from 'react-icons/ai';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  useReactTable,
+  ColumnDef,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  FilterFn,
+  CellContext,
+} from '@tanstack/react-table';
 
-// Tipos de props e dados da transação
-interface Transaction {
-  _id: string;
-  type: string;
-  value: number;
-  createdAt: string;
-  nameOrigin?: string;
-  cpfOrigin?: string;
-  nameDest?: string;
-  cpfDest?: string;
-}
+import { RootState, AppDispatch } from '@/redux/store';
+import {
+  setColumnFilters,
+  setPagination,
+  setCpfFilter,
+} from '@/redux/transactionTableSlice';
 
-interface TransactionTableProps {
+import { openModal, closeModal } from '@/redux/transactionModalSlice';
+
+import type { Transaction } from '@/app/transactions/types/transaction';
+
+import Filters from './filters';
+import PaginationSection from './paginationSection';
+import TableSection from './tableSection';
+import TransactionModal from '../modals/transactionModal';
+
+// Filtro para valor entre min e max
+const filtroValorIntervalo: FilterFn<Transaction> = (row, columnId, filterValue) => {
+  if (!filterValue) return true;
+  const { min, max } = filterValue as { min?: number; max?: number };
+  const valor = row.getValue(columnId) as number;
+  if (min !== undefined && valor < min) return false;
+  if (max !== undefined && valor > max) return false;
+  return true;
+};
+
+// Filtro para intervalo de datas (inclui todo o dia final)
+const filtroDataIntervalo: FilterFn<Transaction> = (row, columnId, filterValue) => {
+  if (!filterValue) return true;
+
+  const { startDate, endDate } = filterValue as { startDate?: string; endDate?: string };
+  const rowDate = new Date(row.getValue(columnId));
+  const rowTimestamp = rowDate.getTime();
+
+  if (startDate) {
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const startUtc = Date.UTC(startYear, startMonth - 1, startDay);
+    if (rowTimestamp < startUtc) return false;
+  }
+
+  if (endDate) {
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endUtc = Date.UTC(endYear, endMonth - 1, endDay + 1);
+    if (rowTimestamp >= endUtc) return false;
+  }
+
+  return true;
+};
+
+interface DinamicTransactionTableProps {
   title: string;
+  editable: boolean;
+  onTransactionUpdated: (updatedTx: Transaction) => void;
+  onTransactionDeleted: (deletedId: string) => void;
   transactions: Transaction[];
-  onTransactionUpdated: (updatedTransaction: Transaction) => void;
-  editable?: boolean;
-  loggedUserCpf?: string;
 }
 
 export default function DinamicTransactionTable({
   title,
-  transactions,
+  editable,
   onTransactionUpdated,
-  editable = false,
-  loggedUserCpf = ''
-}: TransactionTableProps) {
-  const isTransfer = title === 'Transferências';
+  onTransactionDeleted,
+  transactions,
+}: DinamicTransactionTableProps) {
+  const dispatch = useDispatch<AppDispatch>();
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editedValue, setEditedValue] = useState<string>('');
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [localTransactions, setLocalTransactions] = useState<Transaction[]>([]);
+  const columnFilters = useSelector((state: RootState) => state.transactionTable.columnFilters);
+  const pagination = useSelector((state: RootState) => state.transactionTable.pagination);
 
-  // Atualiza as transações locais quando a lista de transações muda
+  const modalOpen = useSelector((state: RootState) => state.transactionModal.isOpen);
+  const transactionToEdit = useSelector((state: RootState) => state.transactionModal.transactionToEdit);
+
+  const cpfFilter = useSelector((state: RootState) => state.transactionTable.cpfFilter);
+  const valorMin = useSelector((state: RootState) => state.transactionTable.valorMin);
+  const valorMax = useSelector((state: RootState) => state.transactionTable.valorMax);
+  const dataInicio = useSelector((state: RootState) => state.transactionTable.dataInicio);
+  const dataFim = useSelector((state: RootState) => state.transactionTable.dataFim);
+
+  const loggedUserIdFromRedux = useSelector((state: RootState) => state.user?.id || null);
+  const loggedUserCpf = useSelector((state: RootState) => state.user?.cpf || '');
+
+  const [loggedUserId, setLoggedUserId] = useState<string | null>(null);
+
   useEffect(() => {
-    setLocalTransactions(transactions);
-    setEditingId(null);
-    setEditedValue('');
-  }, [transactions]);
-
-  // Alterna visibilidade dos detalhes da transação
-  const toggleCollapse = (id: string) => {
-    setExpandedRows(prev => {
-      const updated = new Set(prev);
-      updated.has(id) ? updated.delete(id) : updated.add(id);
-      return updated;
-    });
-  };
-
-  // Inicia o modo de edição
-  const handleEditClick = (id: string, currentValue: number) => {
-    setEditingId(id);
-    setEditedValue(currentValue.toString());
-  };
-
-  // Confirma a edição da transação
-  const handleConfirmEdit = async (tx: Transaction) => {
-    const newValNum = Number(editedValue);
-
-    const isInvalid =
-      editingId !== tx._id ||
-      isNaN(newValNum) ||
-      newValNum <= 0 ||
-      newValNum === tx.value;
-
-    if (isInvalid) {
-      setEditingId(null);
-      setEditedValue('');
-      return;
+    if (loggedUserIdFromRedux) {
+      setLoggedUserId(loggedUserIdFromRedux);
+    } else if (typeof window !== 'undefined') {
+      const savedId = localStorage.getItem('authUserId');
+      setLoggedUserId(savedId);
     }
+  }, [loggedUserIdFromRedux]);
 
-    try {
-      const res = await fetch(`/api/transaction/${tx._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newValue: newValNum }),
+  const tipoFiltroAtual = (columnFilters.find((f) => f.id === 'type')?.value as string) ?? '';
+  const isTransfer = tipoFiltroAtual === 'Transferência';
+
+  const columnFiltersRef = useRef(columnFilters);
+  useEffect(() => {
+    columnFiltersRef.current = columnFilters;
+  }, [columnFilters]);
+
+  // Atualiza filtro valor (min e max)
+  useEffect(() => {
+    const newFilters = columnFiltersRef.current.filter((f) => f.id !== 'value');
+
+    if (valorMin !== '' || valorMax !== '') {
+      newFilters.push({
+        id: 'value',
+        value: {
+          min: valorMin !== '' ? +valorMin : undefined,
+          max: valorMax !== '' ? +valorMax : undefined,
+        },
       });
-
-      if (res.ok) {
-        const updatedTx = { ...tx, value: newValNum };
-        onTransactionUpdated(updatedTx);
-        setEditingId(null);
-        setEditedValue('');
-      } else {
-        alert('Erro ao atualizar transação');
-      }
-    } catch (err) {
-      alert('Erro na requisição');
-      console.error('Erro na requisição:', err);
     }
+
+    const isDifferent =
+      newFilters.length !== columnFiltersRef.current.length ||
+      newFilters.some(
+        (f, i) =>
+          f.id !== columnFiltersRef.current[i]?.id ||
+          JSON.stringify(f.value) !== JSON.stringify(columnFiltersRef.current[i]?.value)
+      );
+
+    if (isDifferent) {
+      dispatch(setColumnFilters(newFilters));
+    }
+  }, [valorMin, valorMax, dispatch]);
+
+  // Atualiza filtro data (início e fim)
+  useEffect(() => {
+    const newFilters = columnFiltersRef.current.filter((f) => f.id !== 'createdAt');
+
+    if (dataInicio !== '' || dataFim !== '') {
+      newFilters.push({
+        id: 'createdAt',
+        value: {
+          startDate: dataInicio !== '' ? dataInicio : undefined,
+          endDate: dataFim !== '' ? dataFim : undefined,
+        },
+      });
+    }
+
+    const isDifferent =
+      newFilters.length !== columnFiltersRef.current.length ||
+      newFilters.some(
+        (f, i) =>
+          f.id !== columnFiltersRef.current[i]?.id ||
+          JSON.stringify(f.value) !== JSON.stringify(columnFiltersRef.current[i]?.value)
+      );
+
+    if (isDifferent) {
+      dispatch(setColumnFilters(newFilters));
+    }
+  }, [dataInicio, dataFim, dispatch]);
+
+  useEffect(() => {
+    if (!isTransfer) {
+      dispatch(setCpfFilter(''));
+      const filtered = columnFiltersRef.current.filter((f) => f.id !== 'cpfFilter');
+      if (filtered.length !== columnFiltersRef.current.length) {
+        dispatch(setColumnFilters(filtered));
+      }
+    }
+  }, [isTransfer, dispatch]);
+
+  const filtroCpfTransferencia: FilterFn<Transaction> = (row) => {
+    if (!cpfFilter) return true;
+    const cpf = cpfFilter.trim();
+    return [row.getValue('cpfOrigin'), row.getValue('cpfDest')].some(
+      (val) => typeof val === 'string' && val.includes(cpf)
+    );
   };
 
-  // Exclui a transação
-  const handleDelete = async (id: string) => {
-    const confirmed = confirm('Deseja realmente excluir esta transação?');
-    if (!confirmed) return;
+  const columns: ColumnDef<Transaction>[] = [
+    ...(isTransfer
+      ? [
+          {
+            accessorKey: 'nameOrigin',
+            header: 'Nome Remetente',
+          },
+          {
+            id: 'cpfFilter',
+            accessorFn: (row: Transaction) => row.cpfOrigin || '',
+            header: 'Filtro CPF',
+            filterFn: filtroCpfTransferencia,
+            cell: () => null,
+          },
+          {
+            id: 'cpfOrigin',
+            accessorKey: 'cpfOrigin',
+            header: () => null,
+            cell: () => null,
+            enableColumnFilter: true,
+            enableSorting: false,
+          },
+          {
+            id: 'cpfDest',
+            accessorKey: 'cpfDest',
+            header: () => null,
+            cell: () => null,
+            enableColumnFilter: true,
+            enableSorting: false,
+          },
+        ]
+      : []),
+    {
+      accessorKey: 'type',
+      header: 'Tipo',
+      filterFn: 'includesString',
+    },
+    {
+      accessorKey: 'value',
+      header: 'Valor',
+      filterFn: filtroValorIntervalo,
+      cell: (info: CellContext<Transaction, unknown>) => {
+        const valor = info.getValue() as number;
+        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      },
+    },
+    {
+      accessorKey: 'createdAt',
+      header: 'Data',
+      filterFn: filtroDataIntervalo,
+      cell: (info: CellContext<Transaction, unknown>) => {
+        const valor = info.getValue() as string | number | Date;
+        return new Date(valor).toLocaleDateString('pt-BR');
+      },
+    },
+    ...(isTransfer
+      ? [
+          {
+            accessorKey: 'nameDest',
+            header: 'Nome Destinatário',
+          },
+        ]
+      : []),
+    {
+      id: 'actions',
+      header: 'Ações',
+      cell: (info: CellContext<Transaction, unknown>) => {
+        const tx = info.row.original;
+        const canEdit = tx.type !== 'Transferência' || tx.cpfOrigin === loggedUserCpf;
+        return (
+          <div className="flex items-center justify-end gap-3">
+            {editable && canEdit && (
+              <button
+                className="font-medium text-secondary hover:underline"
+                onClick={() => dispatch(openModal({ transaction: tx }))}
+              >
+                Editar
+              </button>
+            )}
+            <button
+              className="font-medium text-red-600 hover:underline"
+              onClick={async () => {
+                if (!confirm('Deseja realmente excluir esta transação?')) return;
+                const res = await fetch(`/api/transaction/${tx._id}`, { method: 'DELETE' });
+                alert(res.ok ? 'Transação excluída' : 'Erro ao excluir transação');
+                if (res.ok) onTransactionDeleted(tx._id);
+              }}
+            >
+              Excluir
+            </button>
+          </div>
+        );
+      },
+    },
+  ];
 
-    try {
-      const res = await fetch(`/api/transaction/${id}`, { method: 'DELETE' });
+  // Memorize handlers to avoid infinite update loop
+  const onColumnFiltersChange = useCallback(
+    (updater: any) => {
+      const newFilters =
+        typeof updater === 'function' ? updater(columnFilters) : updater;
 
-      if (res.ok) {
-        setLocalTransactions(prev => prev.filter(t => t._id !== id));
-      } else {
-        alert('Erro ao excluir transação');
+      const isEqual =
+        newFilters.length === columnFilters.length &&
+        newFilters.every((f: any, i: number) =>
+          f.id === columnFilters[i]?.id &&
+          JSON.stringify(f.value) === JSON.stringify(columnFilters[i]?.value)
+        );
+
+      if (!isEqual) {
+        dispatch(setColumnFilters(newFilters));
       }
-    } catch (err) {
-      alert('Erro na requisição');
-      console.error('Erro na requisição:', err);
-    }
+    },
+    [columnFilters, dispatch]
+  );
+
+  const onPaginationChange = useCallback(
+    (updater: any) => {
+      const newPagination =
+        typeof updater === 'function' ? updater(pagination) : updater;
+
+      if (
+        newPagination.pageIndex !== pagination.pageIndex ||
+        newPagination.pageSize !== pagination.pageSize
+      ) {
+        dispatch(setPagination(newPagination));
+      }
+    },
+    [pagination, dispatch]
+  );
+
+  const table = useReactTable({
+    data: [...transactions], // clone para garantir imutabilidade
+    columns,
+    state: { columnFilters, pagination },
+    onColumnFiltersChange,
+    onPaginationChange,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const handleClose = () => {
+    dispatch(closeModal());
+  };
+
+  const handleSave = async (updatedTransaction: Transaction) => {
+    handleClose();
+    onTransactionUpdated(updatedTransaction);
   };
 
   return (
     <div className="mt-10">
       <h2 className="text-2xl font-bold mb-4 text-primary">{title}</h2>
 
-      <div className="overflow-x-auto rounded-xl border border-accent shadow-sm">
-        <table className="min-w-full text-left text-primary">
-          <thead className="text-sm font-medium bg-neutral text-primary">
-            <tr>
-              {isTransfer && <th className="px-6 py-4">Nome Remetente</th>}
-              {isTransfer && <th className="px-6 py-4">CPF Remetente</th>}
-              <th className="px-6 py-4">Valor</th>
-              <th className="px-6 py-4">Data</th>
-              {isTransfer && <th className="px-6 py-4">CPF Destinatário</th>}
-              {isTransfer && <th className="px-6 py-4">Nome Destinatário</th>}
-              <th className="px-6 py-4 text-right">Ações</th>
-            </tr>
-          </thead>
+      <Filters isTransfer={isTransfer} table={table} />
 
-          <tbody>
-            {localTransactions.length === 0 ? (
-              <tr>
-                <td colSpan={isTransfer ? 7 : 4} className="px-6 py-4 text-center text-secondary">
-                  Nenhuma transação encontrada.
-                </td>
-              </tr>
-            ) : (
-              localTransactions.map(tx => {
-                const isEditing = editingId === tx._id;
-                const isExpanded = expandedRows.has(tx._id);
+      <TableSection
+        table={table}
+        columnsLength={columns.length}
+        editable={editable}
+        loggedUserCpf={loggedUserCpf}
+        onTransactionUpdated={onTransactionUpdated}
+        onTransactionDeleted={onTransactionDeleted}
+        title={title}
+      />
 
-                const canEdit = editable && (!isTransfer || tx.cpfOrigin === loggedUserCpf);
+      <PaginationSection table={table} />
 
-                return (
-                  <Fragment key={tx._id}>
-                    <tr className="border-t text-sm hover:bg-[#ADCBE3] border-accent">
-                      {isTransfer && <td className="px-6 py-4">{tx.nameOrigin}</td>}
-                      {isTransfer && <td className="px-6 py-4">{tx.cpfOrigin}</td>}
-                      <td className="px-6 py-4">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            min={1}
-                            step={0.01}
-                            value={editedValue}
-                            onChange={e => setEditedValue(e.target.value)}
-                            className="border rounded px-2 py-1 w-28 text-primary border-primary"
-                            aria-label="Editar valor da transação"
-                          />
-                        ) : (
-                          tx.value.toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          })
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {new Date(tx.createdAt).toLocaleString('pt-BR')}
-                      </td>
-                      {isTransfer && <td className="px-6 py-4">{tx.cpfDest}</td>}
-                      {isTransfer && <td className="px-6 py-4">{tx.nameDest}</td>}
-
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-3">
-                          {isEditing ? (
-                            <button
-                              className="font-medium text-green-600 hover:underline"
-                              onClick={() => handleConfirmEdit(tx)}
-                            >
-                              Confirmar
-                            </button>
-                          ) : (
-                            <>
-                              {canEdit && (
-                                <>
-                                  <button
-                                    className="font-medium text-secondary hover:underline"
-                                    onClick={() => handleEditClick(tx._id, tx.value)}
-                                  >
-                                    Editar
-                                  </button>
-                                  <button
-                                    className="font-medium text-red-600 hover:underline"
-                                    onClick={() => handleDelete(tx._id)}
-                                  >
-                                    Excluir
-                                  </button>
-                                </>
-                              )}
-                              <button
-                                className="flex items-center text-secondary hover:underline"
-                                onClick={() => toggleCollapse(tx._id)}
-                                title="Ver mais informações"
-                                aria-expanded={isExpanded}
-                              >
-                                <AiOutlineInfoCircle className="mr-1" size={18} />
-                                {isExpanded ? <AiOutlineUp size={14} /> : <AiOutlineDown size={14} />}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {isExpanded && (
-                      <tr key={`${tx._id}-details`}>
-                        <td colSpan={isTransfer ? 7 : 4} className="px-6 py-4 bg-neutral">
-                          <div className="rounded-xl p-5 shadow-sm border border-accent bg-neutral">
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-primary">
-                              <AiOutlineInfoCircle size={20} />
-                              Informações da Transação
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-primary">
-                              <p>
-                                <span className="font-semibold">Tipo:</span> {tx.type}
-                              </p>
-                              <p>
-                                <span className="font-semibold">Data:</span>{' '}
-                                {new Date(tx.createdAt).toLocaleString('pt-BR')}
-                              </p>
-                              <p>
-                                <span className="font-semibold">Valor:</span>{' '}
-                                {tx.value.toLocaleString('pt-BR', {
-                                  style: 'currency',
-                                  currency: 'BRL',
-                                })}
-                              </p>
-                              {isTransfer && (
-                                <>
-                                  <p>
-                                    <span className="font-semibold">Nome Remetente:</span>{' '}
-                                    {tx.nameOrigin}
-                                  </p>
-                                  <p>
-                                    <span className="font-semibold">CPF Remetente:</span>{' '}
-                                    {tx.cpfOrigin}
-                                  </p>
-                                  <p>
-                                    <span className="font-semibold">Nome Destinatário:</span>{' '}
-                                    {tx.nameDest}
-                                  </p>
-                                  <p>
-                                    <span className="font-semibold">CPF Destinatário:</span>{' '}
-                                    {tx.cpfDest}
-                                  </p>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      {modalOpen && transactionToEdit && (
+        <TransactionModal
+          userId={loggedUserId}
+          transactionToEdit={transactionToEdit}
+          onClose={handleClose}
+          onSave={handleSave}
+        />
+      )}
     </div>
   );
 }

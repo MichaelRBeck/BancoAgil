@@ -1,6 +1,7 @@
+
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import NewTransactionButton from '../components/NewTransactionButton';
+import NewTransactionButton from './NewTransactionButton';
 
 const meta: Meta<typeof NewTransactionButton> = {
   title: 'Transactions/NewTransactionButton',
