@@ -214,7 +214,8 @@ export const getServerSideProps = wrapper.getServerSideProps(
 
     // Função para buscar usuário autenticado pelo token
     async function fetchUserByToken(token: string) {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/get-user`, {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'; // fallback local
+      const res = await fetch(`${baseUrl}/api/get-user`, {
         headers: { cookie: `token=${token}` },
       });
       if (!res.ok) return null;
