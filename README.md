@@ -129,9 +129,6 @@ Acesse em: http://localhost:3000
 
 ✅ Docker Ready para deploy em produção
 
-🎨 Protótipo no Figma
-🔗 Figma - Tech Challenge Bank - Banco Ágil
-
 👤 Autor
 Michael Ribeiro Beck Barboza
 📘 RM: 363609
