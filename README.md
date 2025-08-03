@@ -1,9 +1,8 @@
-
 # 💰 Banco Ágil
 
 Projeto desenvolvido como parte da pós-graduação em Engenharia de Front-End — FIAP.
 
-O **Banco Ágil** é uma aplicação bancária digital onde usuários podem se cadastrar, realizar login e, após autenticados, acessar funcionalidades como consulta de saldo, depósitos, saques e transferências entre usuários cadastrados. Foi pensado como um banco simples e funcional, ideal para estudos, demonstrações ou aplicações básicas.
+O **Banco Ágil** é uma aplicação bancária digital moderna, responsiva e com foco em segurança. Usuários podem se cadastrar, realizar login e, após autenticados, acessar funcionalidades como saldo, transações financeiras e análises gráficas.
 
 ---
 
@@ -11,139 +10,130 @@ O **Banco Ágil** é uma aplicação bancária digital onde usuários podem se c
 
 Este projeto simula o funcionamento de um banco digital com funcionalidades essenciais:
 
-- Cadastro e login de usuários
-- Operações bancárias (depósito, saque, transferência)
-- Visualização de saldo
-- Histórico de transações
-- Interface moderna e responsiva
+- Cadastro e login de usuários com autenticação via JWT
+- Visualização de saldo atualizado
+- Operações de depósito, saque e transferência entre usuários
+- Histórico completo de transações
+- Gráficos dinâmicos com análise financeira
+- Interface moderna, acessível e 100% responsiva
+- Arquitetura baseada em `Redux` e `MongoDB`
 
 ---
 
 ## 🚀 Tecnologias Utilizadas
 
-- **Framework:** Next.js (App Router)
-- **Linguagem:** TypeScript
-- **Estilização:** Tailwind CSS + Styled-Components
-- **Banco de dados:** MongoDB com Mongoose
+- **Framework**: Next.js 15 (Pages Router + App Router)
+- **Linguagem**: TypeScript
+- **Estilização**: Tailwind CSS + Styled-Components
+- **Gerenciamento de estado**: Redux Toolkit + `next-redux-wrapper`
+- **Autenticação**: JWT com armazenamento seguro
+- **Banco de Dados**: MongoDB com Mongoose
+- **Visualização de dados**: Recharts
+- **Ícones**: Lucide + React Icons
+- **Outros**: Recoil (resíduos legados), ESLint, Docker, etc.
 
 ---
 
-## 🧭 Estrutura de Pastas
+## 🗂️ Estrutura de Pastas
 
-```
-📦 raiz
-├── api/
-│   ├── get-user/
-│   ├── login/
-│   ├── register/
-│   └── transaction/
-├── components/
-│   ├── footer/
-│   ├── modalComponents/
-│   ├── modals/
-│   ├── navbar/
-│   └── tables/
-├── homepage/
-│   ├── components/
-│   └── hooks/
-├── transactions/
-│   ├── components/
-│   ├── hooks/
-│   └── types/
-├── lib/
-├── models/
-├── services/
-├── types/
-├── utils/
-├── page.tsx
-├── layout.tsx
-├── globals.css
-└── .env.local
-```
+src/
+├── app/ # App Router (layouts, page.tsx, etc)
+│ ├── api/ # Rotas da API (register, login, transações)
+│ ├── components/ # Componentes reutilizáveis e estilizados
+│ ├── homepage/ # Página inicial com dashboard e gráficos
+│ ├── transactions/ # Página de transações e filtros
+│ ├── lib/ # Conexão com MongoDB e registries
+│ ├── models/ # Modelos Mongoose
+│ ├── services/ # Requisições e lógicas de negócio
+│ ├── state/ # Slices ou persistência legacy
+│ ├── types/ # Tipagens globais
+│ └── utils/ # Funções auxiliares e validações
+├── pages/ # Pages Router (SSR/SSG)
+│ ├── homepage/
+│ ├── transactions/
+│ └── api/
+├── redux/ # Slices e store Redux
+├── styles/ # CSS global
+└── styled/ # Styled-components por feature
+
+yaml
+Copiar
+Editar
 
 ---
 
-## 🛠️ Como Rodar Localmente
+## 🐳 Docker
 
-### 1. Clone o repositório
+### 📦 Build da imagem
 
 ```bash
+docker build -t banco-agil .
+🚀 Subir o container
+bash
+Copiar
+Editar
+docker run -p 3000:3000 --env-file .env.local banco-agil
+Acesse em: http://localhost:3000
+
+🛠️ Como Rodar Localmente
+Clone o repositório:
+
+bash
+Copiar
+Editar
 git clone https://github.com/MichaelRBeck/BancoAgil.git
 cd BancoAgil
-```
+Instale as dependências:
 
-### 2. Instale as dependências
-
-```bash
+bash
+Copiar
+Editar
 npm install
-```
+Configure o .env.local:
 
-### 3. Configure as variáveis de ambiente
-
-Antes de rodar o projeto, copie o arquivo `.env.example` para `.env.local` e preencha as variáveis com seus dados reais:
-
-```bash
+bash
+Copiar
+Editar
 cp .env.example .env.local
-```
+Preencha com sua URI do MongoDB:
 
-Exemplo do que deve conter no `.env.local`:
+env
+Copiar
+Editar
+MONGODB_URI="mongodb+srv://<usuario>:<senha>@cluster.mongodb.net/?retryWrites=true&w=majority"
+JWT_SECRET="sua_chave_secreta_segura"
+Execute a aplicação:
 
-```env
-MONGODB_URI="mongodb+srv://seu_usuario:sua_senha@cluster.mongodb.net/?retryWrites=true&w=majority&appName=BancoAgil&authSource=admin"
-```
-
-### 4. Execute a aplicação
-
-```bash
+bash
+Copiar
+Editar
 npm run dev
-```
+Acesse em: http://localhost:3000
 
-Acesse via: [http://localhost:3000](http://localhost:3000)
+🧩 Funcionalidades
+✅ Cadastro e login com validações
 
----
+✅ Autenticação com JWT
 
-## 📖 Rodando o Storybook
+✅ Visualização e atualização de saldo
 
-O projeto também possui o Storybook configurado para visualização dos componentes isoladamente.
+✅ Depósito, saque e transferência entre usuários
 
-Para rodar o Storybook localmente, execute:
+✅ Histórico filtrável de transações
 
-```bash
-npm run storybook
-```
+✅ Análises financeiras com gráficos
 
-O Storybook ficará disponível em: [http://localhost:6006](http://localhost:6006)
+✅ Componentes reutilizáveis e estilizados
 
-Para gerar a build estática do Storybook, use:
+✅ Arquitetura modular e escalável
 
-```bash
-npm run build-storybook
-```
+✅ Docker Ready para deploy em produção
 
----
+🎨 Protótipo no Figma
+🔗 Figma - Tech Challenge Bank - Banco Ágil
 
-## 🧩 Funcionalidades
-
-- ✅ Cadastro de usuários
-- ✅ Login com verificação
-- ✅ Visualização de saldo
-- ✅ Realização de depósitos, saques e transferências
-- ✅ Histórico de transações por usuário
-- ✅ Interface 100% responsiva
-
----
-
-## 🎨 Protótipo no Figma
-
-Você pode visualizar o protótipo visual do sistema aqui:
-
-🔗 [Figma - Tech Challenge Bank - Banco Ágil](https://www.figma.com/design/kp1chKhMvojYEHY5r49Dml/Tech-Challenge-Bank---BancoAgil?node-id=0-1&t=VPIS1ZWjOoAfcIgK-1)
-
----
-
-## 👤 Autor
-
-**Michael Ribeiro Beck Barboza**  
-📘 RM: 363609  
-🎓 Pós-graduação: Engenharia de Front-End  
+👤 Autor
+Michael Ribeiro Beck Barboza
+📘 RM: 363609
+🎓 Pós-graduação: Engenharia de Front-End - FIAP
 📚 Turma: Pós Tech - 3FRNT
