@@ -187,34 +187,34 @@ export default function DinamicTransactionTable({
   const columns: ColumnDef<Transaction>[] = [
     ...(isTransfer
       ? [
-          {
-            accessorKey: 'nameOrigin',
-            header: 'Nome Remetente',
-          },
-          {
-            id: 'cpfFilter',
-            accessorFn: (row: Transaction) => row.cpfOrigin || '',
-            header: 'Filtro CPF',
-            filterFn: filtroCpfTransferencia,
-            cell: () => null,
-          },
-          {
-            id: 'cpfOrigin',
-            accessorKey: 'cpfOrigin',
-            header: () => null,
-            cell: () => null,
-            enableColumnFilter: true,
-            enableSorting: false,
-          },
-          {
-            id: 'cpfDest',
-            accessorKey: 'cpfDest',
-            header: () => null,
-            cell: () => null,
-            enableColumnFilter: true,
-            enableSorting: false,
-          },
-        ]
+        {
+          accessorKey: 'nameOrigin',
+          header: 'Nome Remetente',
+        },
+        {
+          id: 'cpfFilter',
+          accessorFn: (row: Transaction) => row.cpfOrigin || '',
+          header: 'Filtro CPF',
+          filterFn: filtroCpfTransferencia,
+          cell: () => null,
+        },
+        {
+          id: 'cpfOrigin',
+          accessorKey: 'cpfOrigin',
+          header: () => null,
+          cell: () => null,
+          enableColumnFilter: true,
+          enableSorting: false,
+        },
+        {
+          id: 'cpfDest',
+          accessorKey: 'cpfDest',
+          header: () => null,
+          cell: () => null,
+          enableColumnFilter: true,
+          enableSorting: false,
+        },
+      ]
       : []),
     {
       accessorKey: 'type',
@@ -226,8 +226,11 @@ export default function DinamicTransactionTable({
       header: 'Valor',
       filterFn: filtroValorIntervalo,
       cell: (info: CellContext<Transaction, unknown>) => {
-        const valor = info.getValue() as number;
-        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const valor = info.getValue();
+        if (typeof valor === 'number') {
+          return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        return '—';
       },
     },
     {
@@ -235,17 +238,22 @@ export default function DinamicTransactionTable({
       header: 'Data',
       filterFn: filtroDataIntervalo,
       cell: (info: CellContext<Transaction, unknown>) => {
-        const valor = info.getValue() as string | number | Date;
-        return new Date(valor).toLocaleDateString('pt-BR');
+        const valor = info.getValue();
+        if (typeof valor === 'string' || typeof valor === 'number' || valor instanceof Date) {
+          const date = new Date(valor);
+          return isNaN(date.getTime()) ? '—' : date.toLocaleDateString('pt-BR');
+        }
+        return '—';
       },
+
     },
     ...(isTransfer
       ? [
-          {
-            accessorKey: 'nameDest',
-            header: 'Nome Destinatário',
-          },
-        ]
+        {
+          accessorKey: 'nameDest',
+          header: 'Nome Destinatário',
+        },
+      ]
       : []),
     {
       id: 'actions',
