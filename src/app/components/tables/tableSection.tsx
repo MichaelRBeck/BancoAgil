@@ -28,7 +28,6 @@ export default function TableSection({
   title,
 }: TableSectionProps) {
   const dispatch = useDispatch();
-
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -46,14 +45,10 @@ export default function TableSection({
 
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja realmente excluir esta transação?')) return;
-
     try {
       const res = await fetch(`/api/transaction/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        onTransactionDeleted(id);
-      } else {
-        alert('Erro ao excluir transação.');
-      }
+      if (res.ok) onTransactionDeleted(id);
+      else alert('Erro ao excluir transação.');
     } catch (error) {
       alert('Erro na requisição.');
       console.error(error);
@@ -162,36 +157,41 @@ export default function TableSection({
                           </h3>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-primary">
                             <p>
-                              <span className="font-semibold">Tipo:</span> {tx.type}
+                              <span className="font-semibold">Tipo:</span> {tx.type || '—'}
                             </p>
                             <p>
                               <span className="font-semibold">Data:</span>{' '}
-                              {new Date(tx.createdAt).toLocaleString('pt-BR')}
+                              {tx.createdAt
+                                ? new Date(tx.createdAt).toLocaleString('pt-BR')
+                                : '—'}
                             </p>
                             <p>
                               <span className="font-semibold">Valor:</span>{' '}
-                              {tx.value.toLocaleString('pt-BR', {
-                                style: 'currency',
-                                currency: 'BRL',
-                              })}
+                              {typeof tx.value === 'number'
+                                ? tx.value.toLocaleString('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                  })
+                                : '—'}
                             </p>
+
                             {tx.type === 'Transferência' && (
                               <>
                                 <p>
                                   <span className="font-semibold">Nome Remetente:</span>{' '}
-                                  {tx.nameOrigin}
+                                  {tx.nameOrigin || '—'}
                                 </p>
                                 <p>
                                   <span className="font-semibold">CPF Remetente:</span>{' '}
-                                  {tx.cpfOrigin}
+                                  {tx.cpfOrigin || '—'}
                                 </p>
                                 <p>
                                   <span className="font-semibold">Nome Destinatário:</span>{' '}
-                                  {tx.nameDest}
+                                  {tx.nameDest || '—'}
                                 </p>
                                 <p>
                                   <span className="font-semibold">CPF Destinatário:</span>{' '}
-                                  {tx.cpfDest}
+                                  {tx.cpfDest || '—'}
                                 </p>
                               </>
                             )}
