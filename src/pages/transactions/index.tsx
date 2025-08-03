@@ -57,22 +57,15 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
       });
       if (!response.ok) throw new Error('Erro ao salvar transação');
 
-      const savedTx: Transaction = await response.json();
-      dispatch(setTransactionsList([savedTx, ...transactions]));
+      const txRes = await fetch(`/api/transaction?userId=${userId}`);
+      const updatedTransactions: Transaction[] = await txRes.json();
+      dispatch(setTransactionsList(updatedTransactions));
 
-      let delta = 0;
-      switch (savedTx.type) {
-        case 'Depósito':
-          delta = savedTx.value;
-          break;
-        case 'Saque':
-          delta = -savedTx.value;
-          break;
-        case 'Transferência':
-          delta = -savedTx.value;
-          break;
+      const userRes = await fetch(`/api/get-user?id=${userId}`);
+      if (userRes.ok) {
+        const updatedUser = await userRes.json();
+        dispatch(setUserBalance(updatedUser.totalBalance ?? 0));
       }
-      dispatch(setUserBalance(totalBalance + delta));
     } catch (error) {
       console.error(error);
       alert('Erro ao salvar a transação.');
@@ -80,6 +73,7 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
       setLoading(false);
     }
   };
+
 
   const handleTransactionUpdated = async (updatedTx: Transaction) => {
     setLoading(true);
@@ -91,30 +85,15 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
       });
       if (!response.ok) throw new Error('Erro ao atualizar transação');
 
-      const updatedTransaction: Transaction = await response.json();
-      const oldTx = transactions.find(t => t._id === updatedTx._id);
-      if (!oldTx) throw new Error('Transação antiga não encontrada');
+      const txRes = await fetch(`/api/transaction?userId=${userId}`);
+      const updatedTransactions: Transaction[] = await txRes.json();
+      dispatch(setTransactionsList(updatedTransactions));
 
-      dispatch(
-        setTransactionsList(
-          transactions.map(t => (t._id === updatedTx._id ? updatedTransaction : t))
-        )
-      );
-
-      const diff = updatedTransaction.value - oldTx.value;
-      let delta = 0;
-      switch (updatedTransaction.type) {
-        case 'Depósito':
-          delta = diff;
-          break;
-        case 'Saque':
-          delta = -diff;
-          break;
-        case 'Transferência':
-          delta = -diff;
-          break;
+      const userRes = await fetch(`/api/get-user?id=${userId}`);
+      if (userRes.ok) {
+        const updatedUser = await userRes.json();
+        dispatch(setUserBalance(updatedUser.totalBalance ?? 0));
       }
-      dispatch(setUserBalance(totalBalance + delta));
     } catch (error) {
       console.error(error);
       alert('Erro ao atualizar a transação.');
@@ -123,32 +102,24 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
     }
   };
 
+
   const handleTransactionDeleted = async (deletedId: string) => {
     setLoading(true);
     try {
       const response = await fetch(`/api/transaction/${deletedId}`, {
         method: 'DELETE',
       });
-      if (!response.ok) throw new Error('Erro ao deletar transação');
+      if (!response.ok) throw new Error('Erro ao deletar a transação');
 
-      const deletedTx = transactions.find(tx => tx._id === deletedId);
-      if (!deletedTx) throw new Error('Transação não encontrada');
+      const txRes = await fetch(`/api/transaction?userId=${userId}`);
+      const updatedTransactions: Transaction[] = await txRes.json();
+      dispatch(setTransactionsList(updatedTransactions));
 
-      dispatch(setTransactionsList(transactions.filter(tx => tx._id !== deletedId)));
-
-      let delta = 0;
-      switch (deletedTx.type) {
-        case 'Depósito':
-          delta = -deletedTx.value;
-          break;
-        case 'Saque':
-          delta = deletedTx.value;
-          break;
-        case 'Transferência':
-          delta = deletedTx.value;
-          break;
+      const userRes = await fetch(`/api/get-user?id=${userId}`);
+      if (userRes.ok) {
+        const updatedUser = await userRes.json();
+        dispatch(setUserBalance(updatedUser.totalBalance ?? 0));
       }
-      dispatch(setUserBalance(totalBalance + delta));
     } catch (error) {
       console.error(error);
       alert('Erro ao deletar a transação.');
@@ -156,6 +127,7 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
       setLoading(false);
     }
   };
+
 
   if (!userId) return <p>Usuário não autenticado. Por favor, faça login.</p>;
 

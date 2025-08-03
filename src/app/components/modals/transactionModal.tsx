@@ -20,7 +20,6 @@ interface ModalProps {
   transactionToEdit?: Transaction;
 }
 
-// ... imports e interfaces permanecem os mesmos
 
 export default function TransactionModal({
   onClose,
@@ -55,11 +54,15 @@ export default function TransactionModal({
 
   useEffect(() => {
     if (!userId || !tipo) return;
-    fetch(`/api/transaction/last?userId=${userId}&tipo=${encodeURIComponent(tipo)}`)
+
+    fetch(`/api/transaction/last?userId=${userId}&tipo=${encodeURIComponent(tipo)}`, {
+      credentials: 'include',
+    })
       .then(res => res.json())
       .then(data => setLastTransaction(data.transaction || null))
       .catch(() => setLastTransaction(null));
   }, [userId, tipo]);
+
 
   const isDuplicate = (() => {
     if (!lastTransaction) return false;
@@ -254,11 +257,10 @@ export default function TransactionModal({
           <button
             type="submit"
             disabled={!isFormValid || isSubmitting}
-            className={`w-full rounded-xl py-3 text-base font-bold tracking-[0.015em] transition ${
-              isFormValid && !isSubmitting
+            className={`w-full rounded-xl py-3 text-base font-bold tracking-[0.015em] transition ${isFormValid && !isSubmitting
                 ? 'bg-primary text-white hover:bg-secondary'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+              }`}
           >
             {isSubmitting ? 'Enviando...' : 'Salvar'}
           </button>
