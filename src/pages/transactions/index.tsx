@@ -30,21 +30,18 @@ interface TransactionPageProps {
 export default function TransactionPage({ userId, transactions: ssrTransactions }: TransactionPageProps) {
   const dispatch = useDispatch<AppDispatch>();
 
-  // Pega as transações do Redux
   const transactions = useSelector((state: RootState) => state.transactionTable.list);
   const totalBalance = useSelector((state: RootState) => state.user.totalBalance);
   const user = useSelector((state: RootState) => state.user);
 
   const [loading, setLoading] = useState(false);
 
-  // Hidrata o Redux com as transações carregadas no SSR assim que o componente monta
   useEffect(() => {
     if (ssrTransactions.length > 0) {
       dispatch(setTransactionsList(ssrTransactions));
     }
   }, [dispatch, ssrTransactions]);
 
-  // Debug logs para garantir que os dados chegam
   useEffect(() => {
     console.log('Redux transactions:', transactions);
     console.log('User in redux:', user);
@@ -61,7 +58,6 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
       if (!response.ok) throw new Error('Erro ao salvar transação');
 
       const savedTx: Transaction = await response.json();
-
       dispatch(setTransactionsList([savedTx, ...transactions]));
 
       let delta = 0;
@@ -96,7 +92,6 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
       if (!response.ok) throw new Error('Erro ao atualizar transação');
 
       const updatedTransaction: Transaction = await response.json();
-
       const oldTx = transactions.find(t => t._id === updatedTx._id);
       if (!oldTx) throw new Error('Transação antiga não encontrada');
 
@@ -171,14 +166,12 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
         <ContentWrapper>
           <ContentInner>
             <UserHeader />
-
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <TotalBalanceCard />
               <NewTransactionButton userId={userId} onSave={handleSave} disabled={loading}>
                 Realizar uma nova transação
               </NewTransactionButton>
             </div>
-
             <DinamicTransactionTable
               title="Transações"
               transactions={transactions}
@@ -194,7 +187,6 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
   );
 }
 
-// SSR com next-redux-wrapper para popular estado no server e enviar para o client
 export const getServerSideProps = wrapper.getServerSideProps(
   (store) => async ({ req }) => {
     const cookie = req.headers.cookie || '';
@@ -212,9 +204,11 @@ export const getServerSideProps = wrapper.getServerSideProps(
       };
     }
 
-    // Função para buscar usuário autenticado pelo token
-    async function fetchUserByToken(token: string) {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'; // fallback local
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers.host;
+    const baseUrl = `${protocol}://${host}`;
+
+    async function fetchUserByToken() {
       const res = await fetch(`${baseUrl}/api/get-user`, {
         headers: { cookie: `token=${token}` },
       });
@@ -222,16 +216,13 @@ export const getServerSideProps = wrapper.getServerSideProps(
       return await res.json();
     }
 
-    // Função para buscar transações do usuário
     async function fetchTransactionsByUserId(userId: string) {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/transaction?userId=${userId}`
-      );
+      const res = await fetch(`${baseUrl}/api/transaction?userId=${userId}`);
       if (!res.ok) return [];
       return await res.json();
     }
 
-    const user = await fetchUserByToken(token);
+    const user = await fetchUserByToken();
     if (!user) {
       return {
         redirect: {
@@ -246,9 +237,6 @@ export const getServerSideProps = wrapper.getServerSideProps(
     store.dispatch(setUser(user));
     store.dispatch(setUserBalance(user.totalBalance ?? 0));
     store.dispatch(setTransactionsList(transactions));
-
-    console.log('SSR - Usuário:', user);
-    console.log('SSR - Transações:', transactions);
 
     return {
       props: {
