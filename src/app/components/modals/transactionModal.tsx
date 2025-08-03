@@ -110,10 +110,40 @@ export default function TransactionModal({
       );
     }
 
-    if (isDuplicate && !window.confirm(
-      `Atenção: esta transação parece ser uma duplicata recente:\n\nTipo: ${tipo}\nValor: R$ ${parseFloat(valor).toFixed(2)}\n${isTransfer ? `CPF destinatário: ${cpfDestinatario}\n` : ''}Deseja continuar?`
-    )) {
-      return;
+    // 🔍 Validação dinâmica de duplicata (apenas ao criar nova transação)
+    if (!transactionToEdit) {
+      try {
+        const res = await fetch(
+          `/api/transaction/last?userId=${userId}&tipo=${encodeURIComponent(tipo)}`,
+          { credentials: 'include' }
+        );
+
+        const data = await res.json();
+        const last = data.transaction;
+
+        if (last) {
+          const sameType = tipo === last.type;
+          const sameValue = parseFloat(valor) === last.value;
+          const sameCPF =
+            !isTransfer ||
+            (cpfDestinatario.replace(/\D/g, '') === last.cpfDest?.replace(/\D/g, ''));
+          const lastCreatedAt = new Date(last.createdAt).getTime();
+          const now = Date.now();
+          const isDuplicate =
+            sameType && sameValue && sameCPF && now - lastCreatedAt <= 5 * 60 * 1000;
+
+          if (isDuplicate) {
+            const confirm = window.confirm(
+              `Atenção: esta transação parece ser uma duplicata recente:\n\nTipo: ${tipo}\nValor: R$ ${parseFloat(
+                valor
+              ).toFixed(2)}\n${isTransfer ? `CPF destinatário: ${cpfDestinatario}\n` : ''}Deseja continuar?`
+            );
+            if (!confirm) return;
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao verificar duplicidade:', err);
+      }
     }
 
     setIsSubmitting(true);
@@ -171,6 +201,7 @@ export default function TransactionModal({
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <Overlay onClick={onClose}>
@@ -258,8 +289,8 @@ export default function TransactionModal({
             type="submit"
             disabled={!isFormValid || isSubmitting}
             className={`w-full rounded-xl py-3 text-base font-bold tracking-[0.015em] transition ${isFormValid && !isSubmitting
-                ? 'bg-primary text-white hover:bg-secondary'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-primary text-white hover:bg-secondary'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
           >
             {isSubmitting ? 'Enviando...' : 'Salvar'}
