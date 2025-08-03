@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Overlay,
   ModalBox,
@@ -20,7 +20,6 @@ interface ModalProps {
   transactionToEdit?: Transaction;
 }
 
-
 export default function TransactionModal({
   onClose,
   userId,
@@ -38,6 +37,22 @@ export default function TransactionModal({
 
   const isTransfer = tipo === 'Transferência';
 
+  const isValidCPF = (cpf: string) => /^\d{11}$/.test(cpf.replace(/\D/g, ''));
+
+  const isFormValid =
+    tipo !== '' &&
+    !isNaN(parseFloat(valor)) &&
+    parseFloat(valor) > 0 &&
+    (!isTransfer || (cpfDestinatario.trim() !== '' && isValidCPF(cpfDestinatario)));
+
+  const resetForm = () => {
+    setTipo('');
+    setValor('');
+    setCpfDestinatario('');
+    setFileBase64(null);
+    setFileName(null);
+  };
+
   useEffect(() => {
     if (transactionToEdit) {
       setTipo(transactionToEdit.type || '');
@@ -50,37 +65,19 @@ export default function TransactionModal({
     }
   }, [transactionToEdit]);
 
-  const isValidCPF = (cpf: string) => /^\d{11}$/.test(cpf.replace(/\D/g, ''));
-
   useEffect(() => {
-    if (!userId || !tipo) return;
+    if (!userId || !tipo || transactionToEdit) return;
 
     fetch(`/api/transaction/last?userId=${userId}&tipo=${encodeURIComponent(tipo)}`, {
       credentials: 'include',
     })
       .then(res => res.json())
-      .then(data => setLastTransaction(data.transaction || null))
+      .then(data => {
+        if (data?.transaction) setLastTransaction(data.transaction);
+        else setLastTransaction(null);
+      })
       .catch(() => setLastTransaction(null));
-  }, [userId, tipo]);
-
-
-  const isDuplicate = (() => {
-    if (!lastTransaction) return false;
-    const sameType = tipo === lastTransaction.type;
-    const sameValue = parseFloat(valor) === lastTransaction.value;
-    const sameCPF =
-      !isTransfer ||
-      (cpfDestinatario.replace(/\D/g, '') === lastTransaction.cpfDest?.replace(/\D/g, ''));
-    const lastCreatedAt = new Date(lastTransaction.createdAt).getTime();
-    const now = Date.now();
-    return sameType && sameValue && sameCPF && now - lastCreatedAt <= 5 * 60 * 1000;
-  })();
-
-  const isFormValid =
-    tipo !== '' &&
-    !isNaN(parseFloat(valor)) &&
-    parseFloat(valor) > 0 &&
-    (!isTransfer || (cpfDestinatario.trim() !== '' && isValidCPF(cpfDestinatario)));
+  }, [userId, tipo, transactionToEdit]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,14 +87,6 @@ export default function TransactionModal({
     const reader = new FileReader();
     reader.onloadend = () => setFileBase64(reader.result as string);
     reader.readAsDataURL(file);
-  };
-
-  const resetForm = () => {
-    setTipo('');
-    setValor('');
-    setCpfDestinatario('');
-    setFileBase64(null);
-    setFileName(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,39 +99,20 @@ export default function TransactionModal({
       );
     }
 
-    // 🔍 Validação dinâmica de duplicata (apenas ao criar nova transação)
-    if (!transactionToEdit) {
-      try {
-        const res = await fetch(
-          `/api/transaction/last?userId=${userId}&tipo=${encodeURIComponent(tipo)}`,
-          { credentials: 'include' }
-        );
+    if (!transactionToEdit && lastTransaction) {
+      const sameType = tipo === lastTransaction.type;
+      const sameValue = parseFloat(valor) === lastTransaction.value;
+      const sameCPF =
+        !isTransfer ||
+        (cpfDestinatario.replace(/\D/g, '') === lastTransaction.cpfDest?.replace(/\D/g, ''));
+      const lastCreatedAt = new Date(lastTransaction.createdAt).getTime();
+      const now = Date.now();
+      const isDuplicate = sameType && sameValue && sameCPF && now - lastCreatedAt <= 5 * 60 * 1000;
 
-        const data = await res.json();
-        const last = data.transaction;
-
-        if (last) {
-          const sameType = tipo === last.type;
-          const sameValue = parseFloat(valor) === last.value;
-          const sameCPF =
-            !isTransfer ||
-            (cpfDestinatario.replace(/\D/g, '') === last.cpfDest?.replace(/\D/g, ''));
-          const lastCreatedAt = new Date(last.createdAt).getTime();
-          const now = Date.now();
-          const isDuplicate =
-            sameType && sameValue && sameCPF && now - lastCreatedAt <= 5 * 60 * 1000;
-
-          if (isDuplicate) {
-            const confirm = window.confirm(
-              `Atenção: esta transação parece ser uma duplicata recente:\n\nTipo: ${tipo}\nValor: R$ ${parseFloat(
-                valor
-              ).toFixed(2)}\n${isTransfer ? `CPF destinatário: ${cpfDestinatario}\n` : ''}Deseja continuar?`
-            );
-            if (!confirm) return;
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao verificar duplicidade:', err);
+      if (isDuplicate && !window.confirm(
+        `Atenção: esta transação parece ser uma duplicata recente:\n\nTipo: ${tipo}\nValor: R$ ${parseFloat(valor).toFixed(2)}\n${isTransfer ? `CPF destinatário: ${cpfDestinatario}\n` : ''}Deseja continuar?`
+      )) {
+        return;
       }
     }
 
@@ -201,7 +171,6 @@ export default function TransactionModal({
       setIsSubmitting(false);
     }
   };
-
 
   return (
     <Overlay onClick={onClose}>
@@ -288,10 +257,11 @@ export default function TransactionModal({
           <button
             type="submit"
             disabled={!isFormValid || isSubmitting}
-            className={`w-full rounded-xl py-3 text-base font-bold tracking-[0.015em] transition ${isFormValid && !isSubmitting
-              ? 'bg-primary text-white hover:bg-secondary'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+            className={`w-full rounded-xl py-3 text-base font-bold tracking-[0.015em] transition ${
+              isFormValid && !isSubmitting
+                ? 'bg-primary text-white hover:bg-secondary'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
             {isSubmitting ? 'Enviando...' : 'Salvar'}
           </button>
@@ -300,4 +270,3 @@ export default function TransactionModal({
     </Overlay>
   );
 }
-
