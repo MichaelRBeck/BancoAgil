@@ -41,19 +41,18 @@ export async function GET(req: Request) {
 
     const enriched = await Promise.all(
       transactions.map(async (tx) => {
-        if (tx.type === 'Transferência') {
-          const [origin, dest] = await Promise.all([
-            User.findOne({ cpf: tx.cpfOrigin }),
-            User.findOne({ cpf: tx.cpfDest }),
-          ]);
+        const txObj = tx.toObject();
 
-          return {
-            ...tx.toObject(),
-            nameOrigin: origin?.fullName || '',
-            nameDest: dest?.fullName || '',
-          };
-        }
-        return tx.toObject();
+        const [originUser, destUser] = await Promise.all([
+          txObj.cpfOrigin ? User.findOne({ cpf: txObj.cpfOrigin }) : null,
+          txObj.cpfDest ? User.findOne({ cpf: txObj.cpfDest }) : null,
+        ]);
+
+        return {
+          ...txObj,
+          nameOrigin: originUser?.fullName || '',
+          nameDest: destUser?.fullName || '',
+        };
       })
     );
 
@@ -175,6 +174,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Usuário não encontrado.' }, { status: 404 });
     }
 
+    // 🧠 Preenche automaticamente os dados do remetente, caso não enviados do frontend
+    const finalCpfOrigin = cpfOrigin || user.cpf;
+    const finalNameOrigin = nameOrigin || user.fullName;
+
     // 🛑 BLOQUEAR SAQUE SEM SALDO
     if (type === 'Saque' && user.totalBalance < value) {
       return NextResponse.json({ message: 'Saldo insuficiente para saque.' }, { status: 400 });
@@ -209,8 +212,8 @@ export async function POST(req: Request) {
       userId,
       type,
       value,
-      cpfOrigin,
-      nameOrigin,
+      cpfOrigin: finalCpfOrigin,
+      nameOrigin: finalNameOrigin,
       cpfDest,
       nameDest,
       attachment,
@@ -229,4 +232,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Erro ao criar transação.' }, { status: 500 });
   }
 }
+
 

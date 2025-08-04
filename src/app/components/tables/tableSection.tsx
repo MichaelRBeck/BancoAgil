@@ -43,21 +43,37 @@ export default function TableSection({
     });
   };
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja realmente excluir esta transação?')) return;
+    setDeletingId(id); // desabilita botão enquanto exclui
     try {
+      console.log('[DELETE] chamada iniciada')
       const res = await fetch(`/api/transaction/${id}`, { method: 'DELETE' });
-      if (res.ok) onTransactionDeleted(id);
-      else alert('Erro ao excluir transação.');
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error('❌ Erro ao deletar:', data);
+        alert(data.message || 'Erro ao excluir transação.');
+        return;
+      }
+
+      onTransactionDeleted(id); // dispara atualização
     } catch (error) {
+      console.error('❌ Erro na requisição de exclusão:', error);
       alert('Erro na requisição.');
-      console.error(error);
+    } finally {
+      setDeletingId(null); // reabilita botão
     }
   };
+
+
 
   const handleOpenModalEdit = (tx: Transaction) => {
     dispatch(openModal({ transaction: tx }));
   };
+
 
   return (
     <div className="overflow-x-auto rounded-xl border border-accent shadow-sm mt-10">
@@ -91,7 +107,7 @@ export default function TableSection({
             </tr>
           ) : (
             table.getRowModel().rows.map((row) => {
-              const tx = row.original;
+              const tx: Transaction = row.original;
               const isExpanded = expandedRows.has(tx._id);
               const canEdit =
                 editable && (tx.type !== 'Transferência' || tx.cpfOrigin === loggedUserCpf);
@@ -115,12 +131,14 @@ export default function TableSection({
                                   </button>
 
                                   <button
-                                    className="font-medium text-red-600 hover:underline"
+                                    className="font-medium text-red-600 hover:underline disabled:opacity-50"
                                     onClick={() => handleDelete(tx._id)}
                                     aria-label={`Excluir transação ${tx._id}`}
+                                    disabled={deletingId === tx._id}
                                   >
                                     Excluir
                                   </button>
+
                                 </>
                               )}
 
@@ -169,9 +187,9 @@ export default function TableSection({
                               <span className="font-semibold">Valor:</span>{' '}
                               {typeof tx.value === 'number'
                                 ? tx.value.toLocaleString('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                  })
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                })
                                 : '—'}
                             </p>
 

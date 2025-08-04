@@ -1,3 +1,5 @@
+// corrigido: transactionTableSlice.ts
+
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { Transaction } from '../app/transactions/types/transaction';
 
@@ -14,12 +16,10 @@ interface TransactionTableState {
   valorMax: string;
   dataInicio: string;
   dataFim: string;
-  modalOpen: boolean;
-  transactionToEdit: Transaction | null;
 }
 
 const initialState: TransactionTableState = {
-  list: [], // adiciona aqui
+  list: [],
   cpfFilter: '',
   expandedRows: [],
   columnFilters: [],
@@ -28,8 +28,6 @@ const initialState: TransactionTableState = {
   valorMax: '',
   dataInicio: '',
   dataFim: '',
-  modalOpen: false,
-  transactionToEdit: null,
 };
 
 const transactionTableSlice = createSlice({
@@ -68,15 +66,8 @@ const transactionTableSlice = createSlice({
     setDataFim(state, action: PayloadAction<string>) {
       state.dataFim = action.payload;
     },
-    openModal(state) {
-      state.modalOpen = true;
-    },
-    closeModal(state) {
-      state.modalOpen = false;
-      state.transactionToEdit = null;
-    },
-    setTransactionToEdit(state, action: PayloadAction<Transaction | null>) {
-      state.transactionToEdit = action.payload;
+    removeTransactionById(state, action: PayloadAction<string>) {
+      state.list = state.list.filter(tx => tx._id !== action.payload);
     },
   },
 });
@@ -91,9 +82,7 @@ export const {
   setValorMax,
   setDataInicio,
   setDataFim,
-  openModal,
-  closeModal,
-  setTransactionToEdit,
+  removeTransactionById,
 } = transactionTableSlice.actions;
 
 export default transactionTableSlice.reducer;

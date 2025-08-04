@@ -1,3 +1,4 @@
+// app/api/transaction/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectMongoDB from "@/app/lib/mongodb";
@@ -29,18 +30,21 @@ async function updateUserBalanceByCpfOrId({
   await user.save();
 }
 
-export async function PUT(req: NextRequest, context: any) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectMongoDB();
 
-    const transactionId = context.params.id;
+    const { id } = params;
     const { value } = await req.json();
 
     if (typeof value !== "number" || isNaN(value) || value <= 0) {
       return NextResponse.json({ message: "Valor inválido." }, { status: 400 });
     }
 
-    const transaction = await Transaction.findById(transactionId);
+    const transaction = await Transaction.findById(id);
     if (!transaction) {
       return NextResponse.json({ message: "Transação não encontrada." }, { status: 404 });
     }
@@ -84,14 +88,19 @@ export async function PUT(req: NextRequest, context: any) {
   }
 }
 
-export async function DELETE(req: NextRequest, context: any) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  console.log("🧠 Entrando no handler DELETE /api/transaction/[id]");
   try {
     await connectMongoDB();
 
-    const transactionId = context.params.id;
-    const transaction = await Transaction.findById(transactionId);
+    const { id } = params;
+    const transaction = await Transaction.findById(id);
 
     if (!transaction) {
+      console.log("❌ Transação não encontrada no MongoDB.");
       return NextResponse.json({ message: "Transação não encontrada." }, { status: 404 });
     }
 

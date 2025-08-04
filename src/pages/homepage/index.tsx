@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { GetServerSidePropsContext } from 'next';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch  } from 'react-redux';
 import { useRouter } from 'next/router';
 import { wrapper } from '@/redux/store';
 import { setUser } from '@/redux/userSlice';
@@ -112,17 +112,26 @@ export default function Homepage() {
 
   if (!userId) return null;
 
+  const dispatch = useDispatch();
+
   const handleSave = async (newTransaction: Transaction) => {
     try {
+      // Atualiza o saldo do usuário
       const res = await fetch(`/api/get-user?id=${userId}`);
       if (!res.ok) throw new Error('Erro ao atualizar saldo.');
       const updatedUser = await res.json();
-      // Aqui você pode disparar ação para atualizar o Redux se quiser
-      // dispatch(setUser(updatedUser));
+      // dispatch(setUser(updatedUser)); // opcional
+
+      // Atualiza a lista de transações
+      const txRes = await fetch(`/api/transaction?userId=${userId}`);
+      if (!txRes.ok) throw new Error('Erro ao buscar transações atualizadas.');
+      const txList = await txRes.json();
+      dispatch(setTransactions(txList));
     } catch (err) {
-      console.error('Erro ao atualizar usuário após transação:', err);
+      console.error('Erro ao atualizar transações:', err);
     }
   };
+
 
   return (
     <PageWrapper>

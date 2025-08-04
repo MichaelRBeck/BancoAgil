@@ -50,13 +50,6 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
   const handleSave = async (newTransaction: Transaction) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/transaction', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTransaction),
-      });
-      if (!response.ok) throw new Error('Erro ao salvar transação');
-
       const txRes = await fetch(`/api/transaction?userId=${userId}`);
       const updatedTransactions: Transaction[] = await txRes.json();
       dispatch(setTransactionsList(updatedTransactions));
@@ -68,11 +61,12 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
       }
     } catch (error) {
       console.error(error);
-      alert('Erro ao salvar a transação.');
+      alert('Erro ao atualizar lista de transações.');
     } finally {
       setLoading(false);
     }
   };
+
 
 
   const handleTransactionUpdated = async (updatedTx: Transaction) => {
@@ -106,11 +100,8 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
   const handleTransactionDeleted = async (deletedId: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/transaction/${deletedId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Erro ao deletar a transação');
-
+      // Aqui REMOVEMOS a segunda chamada DELETE
+      // Pois ela já é feita dentro do TableSection
       const txRes = await fetch(`/api/transaction?userId=${userId}`);
       const updatedTransactions: Transaction[] = await txRes.json();
       dispatch(setTransactionsList(updatedTransactions));
@@ -120,13 +111,15 @@ export default function TransactionPage({ userId, transactions: ssrTransactions 
         const updatedUser = await userRes.json();
         dispatch(setUserBalance(updatedUser.totalBalance ?? 0));
       }
-    } catch (error) {
-      console.error(error);
-      alert('Erro ao deletar a transação.');
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar lista após exclusão:', error.message);
+      alert(error.message || 'Erro ao atualizar lista após exclusão.');
     } finally {
       setLoading(false);
     }
   };
+
+
 
 
   if (!userId) return <p>Usuário não autenticado. Por favor, faça login.</p>;
