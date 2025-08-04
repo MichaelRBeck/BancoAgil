@@ -37,28 +37,25 @@ Este projeto simula o funcionamento de um banco digital com funcionalidades esse
 ## 🗂️ Estrutura de Pastas
 
 src/
-├── app/ # App Router (layouts, page.tsx, etc)
-│ ├── api/ # Rotas da API (register, login, transações)
-│ ├── components/ # Componentes reutilizáveis e estilizados
-│ ├── homepage/ # Página inicial com dashboard e gráficos
-│ ├── transactions/ # Página de transações e filtros
-│ ├── lib/ # Conexão com MongoDB e registries
-│ ├── models/ # Modelos Mongoose
-│ ├── services/ # Requisições e lógicas de negócio
-│ ├── state/ # Slices ou persistência legacy
-│ ├── types/ # Tipagens globais
-│ └── utils/ # Funções auxiliares e validações
-├── pages/ # Pages Router (SSR/SSG)
-│ ├── homepage/
-│ ├── transactions/
-│ └── api/
-├── redux/ # Slices e store Redux
-├── styles/ # CSS global
-└── styled/ # Styled-components por feature
+├── app/                       # App Router (layouts, page.tsx, etc)
+│   ├── api/                   # Rotas da API (register, login, transações)
+│   ├── components/            # Componentes reutilizáveis e estilizados
+│   ├── homepage/              # Página inicial com dashboard e gráficos
+│   ├── transactions/          # Página de transações e filtros
+│   ├── lib/                   # Conexão com MongoDB e registries
+│   ├── models/                # Modelos Mongoose
+│   ├── services/              # Requisições e lógicas de negócio
+│   ├── state/                 # Slices ou persistência legacy
+│   ├── types/                 # Tipagens globais
+│   └── utils/                 # Funções auxiliares e validações
+├── pages/                     # Pages Router (SSR/SSG)
+│   ├── homepage/              # SSR da página inicial
+│   ├── transactions/          # SSR da página de transações
+│   └── api/                   # API routes (compatibilidade)
+├── redux/                     # Slices e store Redux
+├── styles/                    # CSS global
+└── styled/                    # Styled-components organizados por feature
 
-yaml
-Copiar
-Editar
 
 ---
 
