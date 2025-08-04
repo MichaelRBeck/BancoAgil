@@ -1,4 +1,5 @@
 // app/api/transaction/[id]/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectMongoDB from "@/app/lib/mongodb";
@@ -32,12 +33,12 @@ async function updateUserBalanceByCpfOrId({
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = context.params;
     const { value } = await req.json();
 
     if (typeof value !== "number" || isNaN(value) || value <= 0) {
@@ -90,13 +91,13 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   console.log("🧠 Entrando no handler DELETE /api/transaction/[id]");
   try {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = context.params;
     const transaction = await Transaction.findById(id);
 
     if (!transaction) {
