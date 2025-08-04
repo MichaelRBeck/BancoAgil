@@ -11,6 +11,7 @@ interface TransactionTableState {
   pagination: {
     pageIndex: number;
     pageSize: number;
+    totalCount: number;
   };
   valorMin: string;
   valorMax: string;
@@ -23,7 +24,7 @@ const initialState: TransactionTableState = {
   cpfFilter: '',
   expandedRows: [],
   columnFilters: [],
-  pagination: { pageIndex: 0, pageSize: 10 },
+  pagination: { pageIndex: 0, pageSize: 5, totalCount: 0 },
   valorMin: '',
   valorMax: '',
   dataInicio: '',
@@ -34,6 +35,30 @@ const transactionTableSlice = createSlice({
   name: 'transactionTable',
   initialState,
   reducers: {
+    setFiltersFromQuery: (state, action) => {
+      const {
+        type = '',
+        search = '',
+        valorMin = '',
+        valorMax = '',
+        dataInicio = '',
+        dataFim = '',
+      } = action.payload;
+
+      // Esses filtros afetam apenas o estado local, não os filtros da tabela react-table
+      state.valorMin = valorMin;
+      state.valorMax = valorMax;
+      state.dataInicio = dataInicio;
+      state.dataFim = dataFim;
+
+      // Filtros que afetam colunas da tabela
+      const filters = [];
+
+      if (type) filters.push({ id: 'type', value: type });
+      if (search) filters.push({ id: 'cpfFilter', value: search });
+
+      state.columnFilters = filters;
+    },
     setTransactionsList(state, action: PayloadAction<Transaction[]>) {
       state.list = action.payload;
     },
@@ -51,8 +76,12 @@ const transactionTableSlice = createSlice({
     setColumnFilters(state, action: PayloadAction<any[]>) {
       state.columnFilters = action.payload;
     },
-    setPagination(state, action: PayloadAction<{ pageIndex: number; pageSize: number }>) {
-      state.pagination = action.payload;
+    setPagination(state, action: PayloadAction<{ pageIndex: number; pageSize: number; totalCount?: number }>) {
+      state.pagination = {
+        ...state.pagination,
+        ...action.payload,
+        totalCount: action.payload.totalCount ?? state.pagination.totalCount,
+      };
     },
     setValorMin(state, action: PayloadAction<string>) {
       state.valorMin = action.payload;
@@ -82,6 +111,7 @@ export const {
   setValorMax,
   setDataInicio,
   setDataFim,
+  setFiltersFromQuery,
   removeTransactionById,
 } = transactionTableSlice.actions;
 

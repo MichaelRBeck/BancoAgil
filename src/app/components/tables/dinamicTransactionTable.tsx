@@ -10,6 +10,9 @@ import {
   getPaginationRowModel,
   FilterFn,
   CellContext,
+  Updater,
+  PaginationState,
+  ColumnFiltersState,
 } from '@tanstack/react-table';
 
 import { RootState, AppDispatch } from '@/redux/store';
@@ -17,10 +20,10 @@ import {
   setColumnFilters,
   setPagination,
   setCpfFilter,
+  setTransactionsList,
 } from '@/redux/transactionTableSlice';
 
 import { openModal, closeModal } from '@/redux/transactionModalSlice';
-
 import type { Transaction } from '@/app/transactions/types/transaction';
 
 import Filters from './filters';
@@ -28,7 +31,6 @@ import PaginationSection from './paginationSection';
 import TableSection from './tableSection';
 import TransactionModal from '../modals/transactionModal';
 
-// Filtro para valor entre min e max
 const filtroValorIntervalo: FilterFn<Transaction> = (row, columnId, filterValue) => {
   if (!filterValue) return true;
   const { min, max } = filterValue as { min?: number; max?: number };
@@ -38,24 +40,26 @@ const filtroValorIntervalo: FilterFn<Transaction> = (row, columnId, filterValue)
   return true;
 };
 
-// Filtro para intervalo de datas (inclui todo o dia final)
 const filtroDataIntervalo: FilterFn<Transaction> = (row, columnId, filterValue) => {
   if (!filterValue) return true;
 
   const { startDate, endDate } = filterValue as { startDate?: string; endDate?: string };
-  const rowDate = new Date(row.getValue(columnId));
+  const rawValue = row.getValue(columnId);
+  if (!rawValue || typeof rawValue !== 'string') return true;
+
+  const rowDate = new Date(rawValue);
   const rowTimestamp = rowDate.getTime();
 
   if (startDate) {
-    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
-    const startUtc = Date.UTC(startYear, startMonth - 1, startDay);
-    if (rowTimestamp < startUtc) return false;
+    const [y, m, d] = startDate.split('-').map(Number);
+    const min = Date.UTC(y, m - 1, d);
+    if (rowTimestamp < min) return false;
   }
 
   if (endDate) {
-    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
-    const endUtc = Date.UTC(endYear, endMonth - 1, endDay + 1);
-    if (rowTimestamp >= endUtc) return false;
+    const [y, m, d] = endDate.split('-').map(Number);
+    const max = Date.UTC(y, m - 1, d + 1);
+    if (rowTimestamp >= max) return false;
   }
 
   return true;
@@ -77,23 +81,27 @@ export default function DinamicTransactionTable({
   transactions,
 }: DinamicTransactionTableProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const {
+    columnFilters,
+    pagination: paginationRedux,
+    list: transactionsRedux,
+    cpfFilter,
+    valorMin,
+    valorMax,
+    dataInicio,
+    dataFim,
+  } = useSelector((state: RootState) => state.transactionTable);
 
-  const columnFilters = useSelector((state: RootState) => state.transactionTable.columnFilters);
-  const pagination = useSelector((state: RootState) => state.transactionTable.pagination);
+  const { id: loggedUserIdFromRedux, cpf: loggedUserCpf } = useSelector(
+    (state: RootState) => state.user
+  );
 
   const modalOpen = useSelector((state: RootState) => state.transactionModal.isOpen);
   const transactionToEdit = useSelector((state: RootState) => state.transactionModal.transactionToEdit);
 
-  const cpfFilter = useSelector((state: RootState) => state.transactionTable.cpfFilter);
-  const valorMin = useSelector((state: RootState) => state.transactionTable.valorMin);
-  const valorMax = useSelector((state: RootState) => state.transactionTable.valorMax);
-  const dataInicio = useSelector((state: RootState) => state.transactionTable.dataInicio);
-  const dataFim = useSelector((state: RootState) => state.transactionTable.dataFim);
-
-  const loggedUserIdFromRedux = useSelector((state: RootState) => state.user?.id || null);
-  const loggedUserCpf = useSelector((state: RootState) => state.user?.cpf || '');
-
   const [loggedUserId, setLoggedUserId] = useState<string | null>(null);
+
+  const previousQueryRef = useRef('');
 
   useEffect(() => {
     if (loggedUserIdFromRedux) {
@@ -103,85 +111,118 @@ export default function DinamicTransactionTable({
       setLoggedUserId(savedId);
     }
   }, [loggedUserIdFromRedux]);
+  
 
-  const tipoFiltroAtual = (columnFilters.find((f) => f.id === 'type')?.value as string) ?? '';
-  const isTransfer = tipoFiltroAtual === 'Transferência';
+  useEffect(() => {
+    if (!loggedUserId) return;
 
-  const columnFiltersRef = useRef(columnFilters);
+    const params = new URLSearchParams({
+      userId: loggedUserId,
+      page: (paginationRedux.pageIndex + 1).toString(),
+      pageSize: paginationRedux.pageSize.toString(),
+    });
+
+    const tipo = columnFilters.find((f) => f.id === 'type')?.value;
+    if (tipo) params.append('type', tipo);
+    if (cpfFilter) params.append('search', cpfFilter);
+    if (valorMin) params.append('valorMin', valorMin);
+    if (valorMax) params.append('valorMax', valorMax);
+    if (dataInicio) params.append('dataInicio', dataInicio);
+    if (dataFim) params.append('dataFim', dataFim);
+
+    const query = params.toString();
+    if (previousQueryRef.current === query) return;
+    previousQueryRef.current = query;
+
+    const fetchPaginatedTransactions = async () => {
+      try {
+        const res = await fetch(`/api/transaction?${query}`);
+        const json = await res.json();
+
+        if (Array.isArray(json.transactions)) {
+          dispatch(setTransactionsList(json.transactions));
+          dispatch(setPagination({
+            ...paginationRedux,
+            totalCount: json.totalCount,
+          }));
+        } else {
+          console.warn('Resposta inesperada da API:', json);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar transações paginadas com filtros:', err);
+      }
+    };
+
+    fetchPaginatedTransactions();
+  }, [
+    paginationRedux.pageIndex,
+    paginationRedux.pageSize,
+    columnFilters,
+    cpfFilter,
+    valorMin,
+    valorMax,
+    dataInicio,
+    dataFim,
+    dispatch,
+    loggedUserId,
+  ]);
+
+  const columnFiltersRef = useRef<ColumnFiltersState>([]);
   useEffect(() => {
     columnFiltersRef.current = columnFilters;
   }, [columnFilters]);
 
-  // Atualiza filtro valor (min e max)
+  const tipoFiltroAtual = columnFilters.find((f) => f.id === 'type')?.value as string;
+  const isTransfer = tipoFiltroAtual === 'Transferência';
+
+  // Sincronização com Redux de filtros complexos
   useEffect(() => {
     const newFilters = columnFiltersRef.current.filter((f) => f.id !== 'value');
 
-    if (valorMin !== '' || valorMax !== '') {
+    if (valorMin || valorMax) {
       newFilters.push({
         id: 'value',
         value: {
-          min: valorMin !== '' ? +valorMin : undefined,
-          max: valorMax !== '' ? +valorMax : undefined,
+          min: valorMin ? +valorMin : undefined,
+          max: valorMax ? +valorMax : undefined,
         },
       });
     }
 
-    const isDifferent =
-      newFilters.length !== columnFiltersRef.current.length ||
-      newFilters.some(
-        (f, i) =>
-          f.id !== columnFiltersRef.current[i]?.id ||
-          JSON.stringify(f.value) !== JSON.stringify(columnFiltersRef.current[i]?.value)
-      );
-
-    if (isDifferent) {
-      dispatch(setColumnFilters(newFilters));
-    }
+    dispatch(setColumnFilters(newFilters));
   }, [valorMin, valorMax, dispatch]);
 
-  // Atualiza filtro data (início e fim)
   useEffect(() => {
     const newFilters = columnFiltersRef.current.filter((f) => f.id !== 'createdAt');
 
-    if (dataInicio !== '' || dataFim !== '') {
+    if (dataInicio || dataFim) {
       newFilters.push({
         id: 'createdAt',
         value: {
-          startDate: dataInicio !== '' ? dataInicio : undefined,
-          endDate: dataFim !== '' ? dataFim : undefined,
+          startDate: dataInicio || undefined,
+          endDate: dataFim || undefined,
         },
       });
     }
 
-    const isDifferent =
-      newFilters.length !== columnFiltersRef.current.length ||
-      newFilters.some(
-        (f, i) =>
-          f.id !== columnFiltersRef.current[i]?.id ||
-          JSON.stringify(f.value) !== JSON.stringify(columnFiltersRef.current[i]?.value)
-      );
-
-    if (isDifferent) {
-      dispatch(setColumnFilters(newFilters));
-    }
+    dispatch(setColumnFilters(newFilters));
   }, [dataInicio, dataFim, dispatch]);
 
   useEffect(() => {
     if (!isTransfer) {
       dispatch(setCpfFilter(''));
       const filtered = columnFiltersRef.current.filter((f) => f.id !== 'cpfFilter');
-      if (filtered.length !== columnFiltersRef.current.length) {
-        dispatch(setColumnFilters(filtered));
-      }
+      dispatch(setColumnFilters(filtered));
     }
   }, [isTransfer, dispatch]);
 
   const filtroCpfTransferencia: FilterFn<Transaction> = (row) => {
     if (!cpfFilter) return true;
     const cpf = cpfFilter.trim();
-    return [row.getValue('cpfOrigin'), row.getValue('cpfDest')].some(
-      (val) => typeof val === 'string' && val.includes(cpf)
-    );
+    return ['cpfOrigin', 'cpfDest'].some((field) => {
+      const value = row.getValue(field);
+      return typeof value === 'string' && value.includes(cpf);
+    });
   };
 
   const columns: ColumnDef<Transaction>[] = [
@@ -227,10 +268,9 @@ export default function DinamicTransactionTable({
       filterFn: filtroValorIntervalo,
       cell: (info: CellContext<Transaction, unknown>) => {
         const valor = info.getValue();
-        if (typeof valor === 'number') {
-          return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-        return '—';
+        return typeof valor === 'number'
+          ? valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          : '—';
       },
     },
     {
@@ -238,14 +278,10 @@ export default function DinamicTransactionTable({
       header: 'Data',
       filterFn: filtroDataIntervalo,
       cell: (info: CellContext<Transaction, unknown>) => {
-        const valor = info.getValue();
-        if (typeof valor === 'string' || typeof valor === 'number' || valor instanceof Date) {
-          const date = new Date(valor);
-          return isNaN(date.getTime()) ? '—' : date.toLocaleDateString('pt-BR');
-        }
-        return '—';
+        const raw = info.getValue();
+        const date = new Date(raw as string | number | Date);
+        return isNaN(date.getTime()) ? '—' : date.toLocaleDateString('pt-BR');
       },
-
     },
     ...(isTransfer
       ? [
@@ -258,25 +294,25 @@ export default function DinamicTransactionTable({
     {
       id: 'actions',
       header: 'Ações',
-      cell: (info: CellContext<Transaction, unknown>) => {
+      cell: (info) => {
         const tx = info.row.original;
         const canEdit = tx.type !== 'Transferência' || tx.cpfOrigin === loggedUserCpf;
         return (
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex justify-end gap-3">
             {editable && canEdit && (
               <button
-                className="font-medium text-secondary hover:underline"
+                className="text-blue-600 hover:underline"
                 onClick={() => dispatch(openModal({ transaction: tx }))}
               >
                 Editar
               </button>
             )}
             <button
-              className="font-medium text-red-600 hover:underline"
+              className="text-red-600 hover:underline"
               onClick={async () => {
-                if (!confirm('Deseja realmente excluir esta transação?')) return;
+                if (!confirm('Deseja excluir esta transação?')) return;
                 const res = await fetch(`/api/transaction/${tx._id}`, { method: 'DELETE' });
-                alert(res.ok ? 'Transação excluída' : 'Erro ao excluir transação');
+                alert(res.ok ? 'Transação excluída' : 'Erro ao excluir');
                 if (res.ok) onTransactionDeleted(tx._id);
               }}
             >
@@ -288,85 +324,59 @@ export default function DinamicTransactionTable({
     },
   ];
 
-  // Memorize handlers to avoid infinite update loop
   const onColumnFiltersChange = useCallback(
-    (updater: any) => {
-      const newFilters =
-        typeof updater === 'function' ? updater(columnFilters) : updater;
-
-      const isEqual =
-        newFilters.length === columnFilters.length &&
-        newFilters.every((f: any, i: number) =>
-          f.id === columnFilters[i]?.id &&
-          JSON.stringify(f.value) === JSON.stringify(columnFilters[i]?.value)
-        );
-
-      if (!isEqual) {
-        dispatch(setColumnFilters(newFilters));
-      }
+    (updater: Updater<ColumnFiltersState>) => {
+      const newFilters = typeof updater === 'function' ? updater(columnFilters) : updater;
+      dispatch(setColumnFilters(newFilters));
     },
     [columnFilters, dispatch]
   );
 
   const onPaginationChange = useCallback(
-    (updater: any) => {
-      const newPagination =
-        typeof updater === 'function' ? updater(pagination) : updater;
-
-      if (
-        newPagination.pageIndex !== pagination.pageIndex ||
-        newPagination.pageSize !== pagination.pageSize
-      ) {
-        dispatch(setPagination(newPagination));
-      }
+    (updater: Updater<PaginationState>) => {
+      const newPagination = typeof updater === 'function' ? updater(paginationRedux) : updater;
+      dispatch(setPagination(newPagination));
     },
-    [pagination, dispatch]
+    [paginationRedux, dispatch]
   );
 
   const table = useReactTable({
-    data: [...transactions], // clone para garantir imutabilidade
+    data: transactionsRedux,
     columns,
-    state: { columnFilters, pagination },
+    state: { columnFilters, pagination: paginationRedux },
     onColumnFiltersChange,
     onPaginationChange,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
+    pageCount: Math.ceil(paginationRedux.totalCount / paginationRedux.pageSize),
   });
-
-  const handleClose = () => {
-    dispatch(closeModal());
-  };
-
-  const handleSave = async (updatedTransaction: Transaction) => {
-    handleClose();
-    onTransactionUpdated(updatedTransaction);
-  };
 
   return (
     <div className="mt-10">
       <h2 className="text-2xl font-bold mb-4 text-primary">{title}</h2>
-
       <Filters isTransfer={isTransfer} table={table} />
-
       <TableSection
         table={table}
         columnsLength={columns.length}
         editable={editable}
-        loggedUserCpf={loggedUserCpf}
+        loggedUserCpf={loggedUserCpf || ''}
         onTransactionUpdated={onTransactionUpdated}
         onTransactionDeleted={onTransactionDeleted}
         title={title}
       />
 
       <PaginationSection table={table} />
-
       {modalOpen && transactionToEdit && (
         <TransactionModal
           userId={loggedUserId}
           transactionToEdit={transactionToEdit}
-          onClose={handleClose}
-          onSave={handleSave}
+          onClose={() => dispatch(closeModal())}
+          onSave={(tx) => {
+            dispatch(closeModal());
+            onTransactionUpdated(tx);
+          }}
         />
       )}
     </div>

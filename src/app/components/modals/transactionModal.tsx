@@ -259,7 +259,7 @@ export default function TransactionModal({
             disabled={!isFormValid || isSubmitting}
             className={`w-full rounded-xl py-3 text-base font-bold tracking-[0.015em] transition ${
               isFormValid && !isSubmitting
-                ? 'bg-primary text-white hover:bg-secondary'
+                ? 'bg-[var(--primary)] text-white hover:bg-secondary'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >

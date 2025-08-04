@@ -7,11 +7,18 @@ const VALID_TRANSACTION_TYPES = ['Saque', 'Depósito', 'Transferência'] as cons
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
+
   const userId = searchParams.get('userId');
   const search = searchParams.get('search') || '';
   const type = searchParams.get('type');
   const page = parseInt(searchParams.get('page') || '1');
   const pageSize = parseInt(searchParams.get('pageSize') || '10');
+
+  const valorMin = parseFloat(searchParams.get('valorMin') || '');
+  const valorMax = parseFloat(searchParams.get('valorMax') || '');
+  const dataInicio = searchParams.get('dataInicio');
+  const dataFim = searchParams.get('dataFim');
+  const cpf = searchParams.get('cpf')?.trim();
 
   if (!userId) {
     return NextResponse.json({ error: 'User ID obrigatório' }, { status: 400 });
@@ -27,12 +34,38 @@ export async function GET(req: Request) {
     const filter: any = { userId };
 
     if (type) filter.type = type;
-    if (search) {
+
+    if (cpf) {
+      filter.$or = [
+        { cpfOrigin: { $regex: cpf, $options: 'i' } },
+        { cpfDest: { $regex: cpf, $options: 'i' } },
+      ];
+    } else if (search) {
       filter.$or = [
         { cpfOrigin: { $regex: search, $options: 'i' } },
         { cpfDest: { $regex: search, $options: 'i' } },
       ];
     }
+
+    if (!isNaN(valorMin)) {
+      filter.value = { ...(filter.value || {}), $gte: valorMin };
+    }
+
+    if (!isNaN(valorMax)) {
+      filter.value = { ...(filter.value || {}), $lte: valorMax };
+    }
+
+    if (dataInicio) {
+      filter.createdAt = { ...(filter.createdAt || {}), $gte: new Date(dataInicio) };
+    }
+
+    if (dataFim) {
+      const fim = new Date(dataFim);
+      fim.setUTCHours(23, 59, 59, 999);
+      filter.createdAt = { ...(filter.createdAt || {}), $lte: fim };
+    }
+
+    const totalCount = await Transaction.countDocuments(filter);
 
     const transactions = await Transaction.find(filter)
       .sort({ createdAt: -1 })
@@ -56,12 +89,18 @@ export async function GET(req: Request) {
       })
     );
 
-    return NextResponse.json(enriched);
+    return NextResponse.json({
+      transactions: enriched,
+      totalCount,
+    });
   } catch (error) {
     console.error('Erro no GET /transaction:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }
 }
+
+
+
 
 export async function PATCH(req: Request) {
   try {

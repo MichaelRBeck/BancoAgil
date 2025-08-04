@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { GetServerSidePropsContext } from 'next';
-import { useSelector, useDispatch  } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/router';
 import { wrapper } from '@/redux/store';
 import { setUser } from '@/redux/userSlice';
@@ -57,13 +57,11 @@ export const getServerSideProps = wrapper.getServerSideProps(
         };
       }
 
-      // Monta baseUrl dinâmico para o ambiente (local, produção, etc)
       const protocol = req.headers['x-forwarded-proto'] || 'http';
       const host = req.headers.host;
       const baseUrl = `${protocol}://${host}`;
 
       try {
-        // Fetch user autenticado via token no cookie
         const userRes = await fetch(`${baseUrl}/api/get-user`, {
           headers: { cookie: `token=${token}` },
         });
@@ -73,9 +71,10 @@ export const getServerSideProps = wrapper.getServerSideProps(
         const user = await userRes.json();
         store.dispatch(setUser(user));
 
-        // Fetch transações do usuário
         const transRes = await fetch(`${baseUrl}/api/transaction?userId=${user.id}`);
-        const transactions = transRes.ok ? await transRes.json() : [];
+        const data = await transRes.json();
+        const transactions = Array.isArray(data.transactions) ? data.transactions : [];
+
         store.dispatch(setTransactions(transactions));
 
         return { props: {} };
@@ -92,13 +91,11 @@ export const getServerSideProps = wrapper.getServerSideProps(
 );
 
 export default function Homepage() {
-  console.log('📍 Entrou na página homepage');
-
   const router = useRouter();
+  const dispatch = useDispatch();
+
   const user = useSelector((state: RootState) => state.user);
   const userId = user?.id;
-
-  console.log('Usuário no Redux:', user);
 
   const transactions = useSelector((state: RootState) =>
     Array.isArray(state.transactions?.list) ? state.transactions.list : []
@@ -112,26 +109,21 @@ export default function Homepage() {
 
   if (!userId) return null;
 
-  const dispatch = useDispatch();
-
   const handleSave = async (newTransaction: Transaction) => {
     try {
-      // Atualiza o saldo do usuário
       const res = await fetch(`/api/get-user?id=${userId}`);
       if (!res.ok) throw new Error('Erro ao atualizar saldo.');
       const updatedUser = await res.json();
       // dispatch(setUser(updatedUser)); // opcional
 
-      // Atualiza a lista de transações
       const txRes = await fetch(`/api/transaction?userId=${userId}`);
-      if (!txRes.ok) throw new Error('Erro ao buscar transações atualizadas.');
-      const txList = await txRes.json();
+      const data = await txRes.json();
+      const txList = Array.isArray(data.transactions) ? data.transactions : [];
       dispatch(setTransactions(txList));
     } catch (err) {
       console.error('Erro ao atualizar transações:', err);
     }
   };
-
 
   return (
     <PageWrapper>

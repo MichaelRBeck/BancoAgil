@@ -32,3 +32,10 @@ export const ContentInner = styled.div`
   width: 100%;
   max-width: 80rem;
 `;
+
+export const ButtonWrapper = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+`;
