@@ -18,26 +18,21 @@ function getCookieValue(cookieHeader: string | null, name: string) {
 export async function GET(request: Request) {
   try {
     const cookieHeader = request.headers.get('cookie');
-    console.log('Cookies recebidos:', cookieHeader);
     const token = getCookieValue(cookieHeader, 'token');
     if (!token) {
-      console.log('Token não encontrado no cookie');
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     let payload;
     try {
       payload = jwt.verify(token, JWT_SECRET) as { userId: string };
-      console.log('Payload do token:', payload);
     } catch (e) {
-      console.log('Token inválido:', e);
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
     const user = await getUserById(payload.userId);
 
     if (!user) {
-      console.log('Usuário não encontrado para id:', payload.userId);
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
     }
 

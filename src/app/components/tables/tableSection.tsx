@@ -49,7 +49,6 @@ export default function TableSection({
     if (!confirm('Deseja realmente excluir esta transação?')) return;
     setDeletingId(id); // desabilita botão enquanto exclui
     try {
-      console.log('[DELETE] chamada iniciada')
       const res = await fetch(`/api/transaction/${id}`, { method: 'DELETE' });
       const data = await res.json();
 

@@ -30,19 +30,16 @@ if (!globalWithMongoose._mongoose) {
     conn: null,
     promise: null,
   };
-  console.log("🧠 Inicializando cache global para conexão com MongoDB");
 }
 
 cached = globalWithMongoose._mongoose;
 
 async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) {
-    console.log("✅ Usando conexão MongoDB existente do cache");
     return cached.conn;
   }
 
   if (!cached.promise) {
-    console.log("🔌 Iniciando nova conexão com MongoDB...");
     cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
     });
@@ -50,9 +47,7 @@ async function connectDB(): Promise<typeof mongoose> {
 
   try {
     cached.conn = await cached.promise;
-    console.log("✅ Conectado com sucesso ao MongoDB Atlas");
   } catch (err) {
-    console.error("❌ Falha ao conectar no MongoDB Atlas:", err);
     throw err;
   }
 

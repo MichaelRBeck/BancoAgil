@@ -91,7 +91,6 @@ export async function DELETE(
   req: NextRequest,
   context: any
 ) {
-  console.log("🧠 Entrando no handler DELETE /api/transaction/[id]");
   try {
     await connectMongoDB();
 
@@ -99,7 +98,6 @@ export async function DELETE(
     const transaction = await Transaction.findById(id);
 
     if (!transaction) {
-      console.log("❌ Transação não encontrada no MongoDB.");
       return NextResponse.json({ message: "Transação não encontrada." }, { status: 404 });
     }
 
